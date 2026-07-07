@@ -22,6 +22,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('[Proxy] Supabase environment variables are missing! Bypassing authentication check.');
+    return NextResponse.next();
+  }
+
   // Allow public routes
   if (PUBLIC_ROUTES.includes(pathname)) {
     // If authenticated user visits login, redirect to dashboard
