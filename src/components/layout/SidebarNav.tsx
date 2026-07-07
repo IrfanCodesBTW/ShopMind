@@ -32,7 +32,12 @@ export function SidebarNav() {
 
   return (
     <aside
-      className="hidden md:flex flex-col fixed top-4 bottom-4 left-4 w-64 bg-slate-950/40 backdrop-blur-2xl border border-white/10 p-6 rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.28)] z-[150] justify-between"
+      className="hidden md:flex flex-col fixed w-64 bg-slate-950/40 backdrop-blur-2xl border border-white/10 p-6 rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.28)] z-navigation justify-between"
+      style={{
+        top: 'calc(1rem + env(safe-area-inset-top, 0px))',
+        bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
+        left: 'calc(1rem + env(safe-area-inset-left, 0px))',
+      }}
       role="navigation"
       aria-label="Sidebar navigation"
     >

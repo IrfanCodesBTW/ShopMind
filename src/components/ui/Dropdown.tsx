@@ -51,7 +51,7 @@ export function Dropdown({
       {isOpen && (
         <div
           className={[
-            'absolute mt-2 w-56 rounded-[18px] bg-slate-900/90 backdrop-blur-2xl border border-white/10 p-2 shadow-2xl z-[250] animate-modal-enter origin-top',
+            'absolute mt-2 w-56 rounded-[18px] bg-slate-900/90 backdrop-blur-2xl border border-white/10 p-2 shadow-2xl z-dropdown animate-modal-enter origin-top',
             align === 'right' ? 'right-0' : 'left-0',
           ].join(' ')}
         >

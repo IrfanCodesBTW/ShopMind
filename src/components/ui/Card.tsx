@@ -1,6 +1,6 @@
 // ============================================================================
-// Card Primitive — Liquid Glass Spotlight Card
-// Source: Design.md, design-taste-frontend
+// Card Primitive — Liquid Glass Spotlight Card (Decoupled Layer Architecture)
+// Source: Design.md, design-taste-frontend, Layout System Spec V2.0
 // ============================================================================
 
 'use client';
@@ -50,29 +50,36 @@ export function Card({
       onMouseEnter={() => setIsFocused(true)}
       onMouseLeave={() => setIsFocused(false)}
       className={[
-        'relative overflow-hidden rounded-[var(--radius-lg)] transition-all duration-500',
-        interactive ? 'glass-panel-interactive cursor-pointer' : 'glass-panel',
-        padClasses[padding],
+        'relative rounded-[var(--radius-lg)] transition-all duration-500 overflow-visible',
+        interactive ? 'hover:-translate-y-1 shadow-[0_20px_50px_rgba(0,0,0,0.35)]' : 'shadow-[0_15px_35px_rgba(0,0,0,0.25)]',
         className,
       ].join(' ')}
-      style={{
-        ...style,
-      }}
+      style={style}
       {...props}
     >
-      {/* Spotlight Border Glow */}
-      {glow && isFocused && (
-        <div
-          className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-          style={{
-            background: `radial-gradient(400px circle at ${coords.x}px ${coords.y}px, rgba(255,255,255,0.06), transparent 80%)`,
-            opacity: isFocused ? 1 : 0,
-          }}
-        />
-      )}
+      {/* Stacking Layer 2: Glass Panel (Blur, Background, and Border Isolation) */}
+      <div
+        className={[
+          'w-full h-full rounded-[inherit] transition-all duration-500 overflow-hidden relative',
+          interactive ? 'glass-panel-interactive' : 'glass-panel',
+          padClasses[padding],
+        ].join(' ')}
+      >
+        {/* Stacking Layer 3: Spotlight Highlight Layer */}
+        {glow && isFocused && (
+          <div
+            className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300"
+            style={{
+              background: `radial-gradient(400px circle at ${coords.x}px ${coords.y}px, rgba(255,255,255,0.06), transparent 80%)`,
+              opacity: isFocused ? 1 : 0,
+              zIndex: 2,
+            }}
+          />
+        )}
 
-      {/* Internal Content */}
-      <div className="relative z-10">{children}</div>
+        {/* Stacking Layer 4: Content Layer */}
+        <div className="relative z-10 w-full h-full">{children}</div>
+      </div>
     </div>
   );
 }

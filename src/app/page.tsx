@@ -18,7 +18,12 @@ export default function LandingPage() {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full filter blur-[120px] pointer-events-none" />
 
       {/* Floating Header aligned to the grid width */}
-      <header className="fixed top-6 left-0 right-0 z-[400] px-4 sm:px-6 md:px-8">
+      <header
+        className="fixed left-0 right-0 z-navigation px-4 sm:px-6 md:px-8"
+        style={{
+          top: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+        }}
+      >
         <div className="max-w-6xl mx-auto">
           <div className="w-full bg-slate-950/45 backdrop-blur-2xl border border-white/10 rounded-full py-3.5 px-6 md:px-8 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
             <div className="flex items-center gap-2.5">

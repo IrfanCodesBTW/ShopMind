@@ -45,7 +45,7 @@ export function FeedbackWidget() {
   };
 
   return (
-    <div className="fixed bottom-24 md:bottom-6 right-6 z-[300]">
+    <div className="fixed z-navigation bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-[calc(1.5rem+env(safe-area-inset-right,0px))]">
       {/* Floating Action Button */}
       {!open && (
         <button

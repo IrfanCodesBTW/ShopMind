@@ -41,7 +41,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Toast Portal Container */}
-      <div className="fixed top-6 right-6 z-[600] space-y-3 pointer-events-none max-w-sm w-full">
+      <div className="fixed top-6 right-6 z-toast space-y-3 pointer-events-none max-w-sm w-full">
         {toasts.map((t) => (
           <div
             key={t.id}

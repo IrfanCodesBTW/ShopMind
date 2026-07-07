@@ -30,7 +30,7 @@ export function Drawer({ isOpen, onClose, title, children }: DrawerProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[450] flex justify-end">
+    <div className="fixed inset-0 z-modal flex justify-end">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300"
@@ -38,7 +38,7 @@ export function Drawer({ isOpen, onClose, title, children }: DrawerProps) {
       />
 
       {/* Drawer Panel */}
-      <div className="relative w-full max-w-md h-full bg-slate-950/80 backdrop-blur-3xl border-l border-white/10 p-6 md:p-8 shadow-2xl flex flex-col justify-between z-10 transition-transform duration-500 ease-out translate-x-0">
+      <div className="relative w-full max-w-md h-full bg-slate-950/80 backdrop-blur-3xl border-l border-white/10 p-6 md:p-8 shadow-2xl flex flex-col justify-between z-10 animate-drawer-enter">
         <div className="flex-1 flex flex-col min-h-0">
           {/* Header */}
           <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-6 flex-shrink-0">

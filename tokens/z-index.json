@@ -1,11 +1,11 @@
 {
   "z": {
     "base": "0",
-    "raised": "1",
+    "content": "10",
+    "cards": "20",
+    "navigation": "55",
     "dropdown": "100",
-    "sticky": "200",
-    "overlay": "300",
-    "modal": "400",
-    "toast": "500"
+    "modal": "500",
+    "toast": "1000"
   }
 }

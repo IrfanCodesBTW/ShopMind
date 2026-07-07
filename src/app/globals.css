@@ -184,13 +184,13 @@ body::after {
 
 /* ── Z-Index Utilities ────────────────────────────────────────────────────── */
 
-.z-base     { z-index: var(--z-base); }
-.z-raised   { z-index: var(--z-raised); }
-.z-dropdown { z-index: var(--z-dropdown); }
-.z-sticky   { z-index: var(--z-sticky); }
-.z-overlay  { z-index: var(--z-overlay); }
-.z-modal    { z-index: var(--z-modal); }
-.z-toast    { z-index: var(--z-toast); }
+.z-base       { z-index: var(--z-base); }
+.z-content    { z-index: var(--z-content); }
+.z-cards      { z-index: var(--z-cards); }
+.z-navigation { z-index: var(--z-navigation); }
+.z-dropdown   { z-index: var(--z-dropdown); }
+.z-modal      { z-index: var(--z-modal); }
+.z-toast      { z-index: var(--z-toast); }
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
 
@@ -235,4 +235,61 @@ body::after {
     box-shadow: 0 12px 60px rgba(239, 68, 68, 0.65), 0 0 0 8px rgba(239, 68, 68, 0.1);
   }
 }
+
+.animate-drawer-enter {
+  animation: drawer-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-toast-enter {
+  animation: toast-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-enter {
+  animation: modal-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes drawer-enter {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-skeleton {
+  animation: skeleton-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
 

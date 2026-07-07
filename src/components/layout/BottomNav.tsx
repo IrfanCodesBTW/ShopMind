@@ -30,8 +30,12 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-4 left-4 right-4 bg-slate-950/60 backdrop-blur-3xl border border-white/10 rounded-full py-2 px-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
-      style={{ zIndex: 'var(--z-sticky)' }}
+      className="fixed bg-slate-950/60 backdrop-blur-3xl border border-white/10 rounded-full py-2 px-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)] z-navigation"
+      style={{
+        bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
+        left: 'calc(1rem + env(safe-area-inset-left, 0px))',
+        right: 'calc(1rem + env(safe-area-inset-right, 0px))',
+      }}
       role="navigation"
       aria-label="Main navigation"
     >

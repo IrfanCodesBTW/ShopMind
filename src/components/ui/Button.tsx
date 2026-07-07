@@ -49,7 +49,7 @@ export function Button({
   };
 
   const sizeClasses = {
-    sm: 'px-4 py-2 text-xs font-semibold h-9',
+    sm: 'px-4 py-2 text-xs font-semibold h-11',
     md: 'px-6 py-3 text-sm font-bold h-12',
     lg: 'px-8 py-4 text-base font-extrabold h-14',
   };
