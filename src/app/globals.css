@@ -1,0 +1,236 @@
+/* ============================================================================
+ * ShopMind — Global Styles
+ * Source: new_Design_plan.md Task 3, Design.md, tokens/
+ * ============================================================================ */
+
+/* Design tokens (generated from tokens/*.json) */
+@import '../styles/tokens.css';
+
+/* Tailwind v4 */
+@import "tailwindcss";
+
+/* ── Base Font System ──────────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  line-height: var(--leading-normal);
+  min-height: 100dvh;
+}
+
+/* ── Content Line Length Limitation (65-75 chars) ─────────────────────────── */
+
+.max-char-width {
+  max-width: 65ch;
+  width: 100%;
+}
+
+/* ── Multilingual Font Switching ──────────────────────────────────────────── */
+
+:lang(hi), :lang(hi) * {
+  font-family: var(--font-deva), sans-serif;
+}
+
+:lang(te), :lang(te) * {
+  font-family: var(--font-telugu), sans-serif;
+}
+
+/* ── Accessibility ────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Touch Targets (48px+ per DESIGN_SYSTEM.md) ───────────────────────────── */
+
+.touch-target {
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* ── Motion Utilities ─────────────────────────────────────────────────────── */
+
+.transition-card-hover {
+  transition: var(--motion-transitions-card-hover);
+}
+
+.transition-button-press {
+  transition: var(--motion-transitions-button-press);
+}
+
+.transition-modal {
+  transition: var(--motion-transitions-modal);
+}
+
+.transition-drawer {
+  transition: var(--motion-transitions-drawer);
+}
+
+.transition-toast {
+  transition: var(--motion-transitions-toast);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+
+@keyframes recording-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(229, 57, 53, 0);
+  }
+}
+
+.animate-recording-pulse {
+  animation: recording-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-enter {
+  animation: card-enter var(--motion-duration-normal) var(--motion-easing-decelerate);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--motion-duration-normal) var(--motion-easing-decelerate);
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up var(--motion-duration-slow) var(--motion-easing-decelerate);
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: var(--color-divider);
+  border-radius: var(--radius-sm);
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-toast-enter {
+  animation: toast-enter var(--motion-transitions-toast);
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-modal-enter {
+  animation: modal-enter var(--motion-transitions-modal) var(--motion-easing-decelerate);
+}
+
+/* ── Button Press Effect ──────────────────────────────────────────────────── */
+
+.btn-press {
+  cursor: pointer;
+  transition: var(--motion-transitions-button-press);
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* ── Transaction Type Indicators (semantic tokens) ───────────────────────── */
+
+.tx-sale        { border-left: 3px solid var(--color-income); }
+.tx-expense     { border-left: 3px solid var(--color-expense); }
+.tx-credit-given    { border-left: 3px solid var(--color-credit-given); }
+.tx-credit-received { border-left: 3px solid var(--color-credit-received); }
+.tx-stock-update    { border-left: 3px solid var(--color-text-muted); }
+.tx-stock-check     { border-left: 3px solid var(--color-text-muted); }
+.tx-return          { border-left: 3px solid var(--color-text-muted); }
+
+/* ── Z-Index Utilities ────────────────────────────────────────────────────── */
+
+.z-base     { z-index: var(--z-base); }
+.z-raised   { z-index: var(--z-raised); }
+.z-dropdown { z-index: var(--z-dropdown); }
+.z-sticky   { z-index: var(--z-sticky); }
+.z-overlay  { z-index: var(--z-overlay); }
+.z-modal    { z-index: var(--z-modal); }
+.z-toast    { z-index: var(--z-toast); }
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+}
