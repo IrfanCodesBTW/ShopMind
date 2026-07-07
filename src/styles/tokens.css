@@ -6,35 +6,36 @@
 
 :root {
   /* ── Colors — Light Mode ──────────────────────────────────────────────── */
-  --color-primary: #2D6A4F;
-  --color-primary-hover: #1B4332;
-  --color-primary-muted: #D8F3DC;
-  --color-secondary: #111111;
-  --color-success: #2ECC71;
-  --color-warning: #F4B400;
-  --color-danger: #E53935;
-  --color-info: #2196F3;
-  --color-income: #2ECC71;
-  --color-expense: #E53935;
-  --color-credit-given: #F4B400;
-  --color-credit-received: #2196F3;
-  --color-voice-idle: #2D6A4F;
-  --color-voice-active: #E53935;
-  --color-voice-processing: #1B4332;
-  --color-recording: #E53935;
-  --color-bg: #F7F7F5;
-  --color-surface: #FFFFFF;
-  --color-text-primary: #111111;
-  --color-text-secondary: #666666;
-  --color-text-muted: #8B8B8B;
-  --color-border: #E8E8E8;
-  --color-divider: #ECECEC;
-  --color-dark-bg: #0E0E10;
-  --color-dark-surface: #18181B;
-  --color-dark-card: #202024;
-  --color-dark-text: #F5F5F5;
-  --color-dark-text-secondary: #BBBBBB;
-  --color-dark-border: rgba(255,255,255,0.08);
+  --color-primary: #3B82F6;
+  --color-primary-hover: #2563EB;
+  --color-primary-muted: rgba(59, 130, 246, 0.15);
+  --color-secondary: #94A3B8;
+  --color-success: #22C55E;
+  --color-warning: #FACC15;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
+  --color-income: #22C55E;
+  --color-expense: #EF4444;
+  --color-credit-given: #FACC15;
+  --color-credit-received: #3B82F6;
+  --color-voice-idle: #3B82F6;
+  --color-voice-active: #EF4444;
+  --color-voice-processing: #2563EB;
+  --color-recording: #EF4444;
+  --color-bg: #020617;
+  --color-surface: rgba(255, 255, 255, 0.05);
+  --color-card: rgba(255, 255, 255, 0.08);
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-divider: rgba(255, 255, 255, 0.08);
+  --color-dark-bg: #020617;
+  --color-dark-surface: rgba(255, 255, 255, 0.05);
+  --color-dark-card: rgba(255, 255, 255, 0.08);
+  --color-dark-text: #F8FAFC;
+  --color-dark-text-secondary: #94A3B8;
+  --color-dark-border: rgba(255, 255, 255, 0.12);
 
   /* ── Spacing (8px grid) ───────────────────────────────────────────────── */
   --space-1: 4px;
@@ -56,39 +57,41 @@
 
   /* ── Border Radius ────────────────────────────────────────────────────── */
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-xl: 32px;
   --radius-pill: 999px;
   --radius-full: 9999px;
 
   /* ── Typography ───────────────────────────────────────────────────────── */
-  --text-h1: clamp(2.25rem, 5vw, 4.5rem);
-  --text-h2: clamp(1.75rem, 4vw, 3rem);
-  --text-h3: clamp(1.5rem, 3vw, 2.5rem);
+  --text-h1: clamp(2.5rem, 6vw, 4.5rem);
+  --text-h2: clamp(2rem, 5vw, 3.5rem);
+  --text-h3: clamp(1.75rem, 4vw, 2.5rem);
   --text-h4: 2rem;
   --text-h5: 1.5rem;
   --text-h6: 1.25rem;
   --text-body-lg: 1.125rem;
-  --text-body: 1.125rem;
-  --text-sm: 1rem;
-  --text-caption: 0.875rem;
-  --text-metadata: 0.75rem;
+  --text-body: 1rem;
+  --text-sm: 0.875rem;
+  --text-caption: 0.75rem;
+  --text-metadata: 0.7rem;
+  --weight-light: 300;
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
-  --leading-tight: 1.05;
+  --weight-black: 800;
+  --leading-tight: 1.1;
   --leading-snug: 1.25;
   --leading-normal: 1.6;
   --leading-relaxed: 1.75;
 
   /* ── Shadows / Elevation ──────────────────────────────────────────────── */
-  --shadow-card: 0 4px 20px rgba(0,0,0,0.04);
-  --shadow-modal: 0 20px 60px rgba(0,0,0,0.15);
-  --shadow-dropdown: 0 8px 30px rgba(0,0,0,0.08);
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,0.08);
+  --shadow-card: 0 30px 80px rgba(0,0,0,0.28);
+  --shadow-modal: 0 40px 100px rgba(0,0,0,0.35);
+  --shadow-dropdown: 0 10px 40px rgba(0,0,0,0.2);
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.15);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.25);
 
   /* ── Motion ───────────────────────────────────────────────────────────── */
   --motion-duration-fast: 150ms;

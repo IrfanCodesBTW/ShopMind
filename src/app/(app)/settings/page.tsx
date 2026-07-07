@@ -1,195 +1,202 @@
 // ============================================================================
-// Settings Page — Dark Mode Toggle, Language Switch, Profile (restyled)
-// Source: new_Design_plan.md Task 8, Design.md §Typography
+// Settings Page — v2 Premium Glass Settings & Preferences
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
 
-import React, { useState } from 'react';
-import { Sun, Moon, Monitor, Bell, User, ChevronRight, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Save, LogOut, Monitor, User } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useTheme } from '@/contexts/ThemeContext';
-
-type Lang = { code: string; label: string; nativeLabel: string };
-
-const LANGUAGES: Lang[] = [
-  { code: 'en', label: 'English', nativeLabel: 'English' },
-  { code: 'hi', label: 'Hindi', nativeLabel: 'हिंदी' },
-  { code: 'te', label: 'Telugu', nativeLabel: 'తెలుగు' },
-];
-
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-[var(--text-caption)] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-3 px-1">
-      {children}
-    </h2>
-  );
-}
-
-function SettingsRow({
-  icon, label, description, children, onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  description?: string;
-  children?: React.ReactNode;
-  onClick?: () => void;
-}) {
-  const Element = onClick ? 'button' : 'div';
-  return (
-    <Element
-      onClick={onClick}
-      className={[
-        'flex items-center justify-between gap-4 py-4 px-4 border-b border-[var(--color-divider)] last:border-0 w-full',
-        onClick ? 'cursor-pointer hover:bg-[var(--color-divider)] transition-colors' : '',
-      ].join(' ')}
-    >
-      <div className="flex items-center gap-4 min-w-0">
-        <span className="text-[var(--color-text-muted)] flex-shrink-0 w-5 h-5 flex items-center justify-center">
-          {icon}
-        </span>
-        <div className="min-w-0 text-left">
-          <p className="text-[var(--text-body)] font-semibold text-[var(--color-text-primary)]">{label}</p>
-          {description && (
-            <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] truncate mt-0.5">{description}</p>
-          )}
-        </div>
-      </div>
-      {children || (onClick && <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)] flex-shrink-0" />)}
-    </Element>
-  );
-}
+import { SUPPORTED_LANGUAGES } from '@/lib/i18n';
+import type { SupportedLanguage } from '@/types';
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme();
-  const [activeLang, setActiveLang] = useState('en');
-  const [profileName, setProfileName] = useState('');
+  const [name, setName] = useState('');
   const [shopName, setShopName] = useState('');
+  const [langPreference, setLangPreference] = useState<SupportedLanguage>('en');
+  const [loading, setLoading] = useState(false);
 
-  function switchLanguage(code: string) {
-    setActiveLang(code);
-    // setTimeout handles DOM mutation to avoid immutability lint error
-    setTimeout(() => {
-      document.documentElement.lang = code;
-    }, 0);
-  }
+  const router = useRouter();
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
+
+  // Load current merchant profile
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await fetch('/api/auth/me'); // Simple endpoint to fetch user info
+        const json = await res.json();
+        if (json.success && json.data) {
+          setName(json.data.name || '');
+          setShopName(json.data.shop_name || '');
+          setLangPreference(json.data.language_preference || 'en');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, shop_name: shopName, language_preference: langPreference }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast('Profile updated successfully', 'success');
+        // Update html lang attribute
+        document.documentElement.lang = langPreference;
+      } else {
+        toast(json.error?.message || 'Failed to update profile', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      toast('Network error updating profile', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const res = await fetch('/api/auth/signout', { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        toast('Signed out successfully', 'success');
+        setTimeout(() => {
+          router.push('/login');
+        }, 1000);
+      }
+    } catch (e) {
+      console.error(e);
+      toast('Failed to sign out', 'error');
+    }
+  };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-12">
-      {/* Title */}
-      <div className="space-y-1">
-        <h1 className="text-[var(--text-h5)] font-bold text-[var(--color-text-primary)] tracking-tight">Settings</h1>
-        <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] font-medium">Manage your shop preferences and profile</p>
+    <div className="space-y-8 max-w-3xl mx-auto select-none">
+      {/* Header */}
+      <div className="space-y-1.5">
+        <h1 className="text-[var(--text-h5)] font-black text-white tracking-tight leading-none">
+          {t('settings.title', 'Settings')}
+        </h1>
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+          {t('settings.subtitle', 'Manage your shop profile and settings')}
+        </p>
       </div>
 
-      {/* Appearance */}
-      <div className="space-y-3">
-        <SectionHeader>Appearance</SectionHeader>
-        <Card padding="md" className="border-[var(--color-border)] shadow-[var(--shadow-sm)] space-y-4">
-          <p className="text-[var(--text-sm)] font-semibold text-[var(--color-text-secondary)]">Theme Mode</p>
-          <div className="flex gap-3">
-            {([
-              { value: 'light', icon: <Sun className="w-4 h-4" />, label: 'Light' },
-              { value: 'dark',  icon: <Moon className="w-4 h-4" />, label: 'Dark' },
-              { value: 'system', icon: <Monitor className="w-4 h-4" />, label: 'System' },
-            ] as const).map(({ value, icon, label }) => (
-              <button
-                key={value}
-                onClick={() => setTheme(value)}
-                className={[
-                  'flex-1 flex flex-col items-center justify-center gap-2 py-4 px-3 rounded-[var(--radius-md)]',
-                  'text-[var(--text-sm)] font-semibold border cursor-pointer transition-all duration-[var(--motion-duration-fast)] btn-press',
-                  theme === value
-                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-muted)] text-[var(--color-primary)] shadow-[var(--shadow-sm)]'
-                    : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)]',
-                ].join(' ')}
-                aria-pressed={theme === value}
+      <div className="grid grid-cols-1 gap-6">
+        {/* Profile Card */}
+        <Card padding="lg" className="border-white/5 space-y-6">
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <User className="w-4 h-4 text-blue-400" />
+            {t('settings.profile_details', 'Profile Details')}
+          </h2>
+
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label={t('settings.your_name', 'Your Name')}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Ramesh Kumar"
+                required
+              />
+              <Input
+                label={t('settings.shop_name', 'Shop Name')}
+                value={shopName}
+                onChange={(e) => setShopName(e.target.value)}
+                placeholder="e.g. Ramesh Kirana Store"
+                required
+              />
+            </div>
+
+            {/* Language Preference */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block">
+                {t('settings.language_selection', 'Language')}
+              </label>
+              <select
+                value={langPreference}
+                onChange={(e) => setLangPreference(e.target.value as SupportedLanguage)}
+                className="w-full bg-white/5 border border-white/10 hover:border-white/15 focus:border-blue-500/50 rounded-[18px] h-12 px-4 transition-all duration-300 text-white font-semibold text-sm focus:outline-none"
               >
-                {icon}
-                <span>{label}</span>
-              </button>
-            ))}
+                {SUPPORTED_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.nativeLabel} ({l.label})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-slate-500 font-medium">
+                {t('settings.language_desc', 'Select language for app text and speech recognition')}
+              </p>
+            </div>
+
+            <Button type="submit" variant="primary" loading={loading} icon={<Save className="w-4 h-4" />}>
+              {t('settings.save_profile', 'Save Profile')}
+            </Button>
+          </form>
+        </Card>
+
+        {/* System Customization */}
+        <Card padding="lg" className="border-white/5 space-y-6">
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <Monitor className="w-4 h-4 text-blue-400" />
+            System Customization
+          </h2>
+
+          <div className="flex items-center justify-between pb-4 border-b border-white/5">
+            <div>
+              <p className="text-sm font-bold text-white">Theme Mode</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">Toggle between light and dark display modes</p>
+            </div>
+            <Button variant="secondary" size="sm" onClick={toggleTheme}>
+              {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between pb-4 border-b border-white/5">
+            <div>
+              <p className="text-sm font-bold text-white">Daily SMS summary</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">Get SMS reports of today’s balances</p>
+            </div>
+            <Badge variant="primary">Active</Badge>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-white">Critical Stock Alerts</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">Alerts on low stock thresholds</p>
+            </div>
+            <Badge variant="success">Enabled</Badge>
           </div>
         </Card>
-      </div>
 
-      {/* Language */}
-      <div className="space-y-3">
-        <SectionHeader>Language Selection</SectionHeader>
-        <Card padding="md" className="border-[var(--color-border)] shadow-[var(--shadow-sm)] space-y-4">
-          <p className="text-[var(--text-sm)] font-semibold text-[var(--color-text-secondary)]">Choose language for voice and app UI</p>
-          <div className="flex gap-3 flex-wrap">
-            {LANGUAGES.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => switchLanguage(lang.code)}
-                className={[
-                  'flex flex-col items-center gap-1 px-5 py-3 rounded-[var(--radius-md)] min-w-[100px]',
-                  'text-[var(--text-sm)] font-semibold border cursor-pointer transition-all duration-[var(--motion-duration-fast)] btn-press',
-                  activeLang === lang.code
-                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-muted)] text-[var(--color-primary)] shadow-[var(--shadow-sm)]'
-                    : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)]',
-                ].join(' ')}
-                aria-pressed={activeLang === lang.code}
-                lang={lang.code}
-              >
-                <span className="text-[var(--text-sm)] font-bold">{lang.nativeLabel}</span>
-                <span className="text-[var(--text-caption)] opacity-70 mt-0.5">{lang.label}</span>
-              </button>
-            ))}
+        {/* Sign Out Card */}
+        <Card padding="lg" className="border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-white tracking-tight uppercase">Account Security</h2>
+            <p className="text-xs text-slate-500 font-medium">Log out of your active session on this device</p>
           </div>
+          <Button variant="danger" size="sm" onClick={handleSignOut} icon={<LogOut className="w-4 h-4" />}>
+            Sign Out
+          </Button>
         </Card>
-      </div>
-
-      {/* Profile */}
-      <div className="space-y-3">
-        <SectionHeader>Profile Details</SectionHeader>
-        <Card padding="lg" className="space-y-6 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input
-              label="Your Name"
-              value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
-              placeholder="Enter your name"
-              leftIcon={<User className="w-4 h-4" />}
-            />
-            <Input
-              label="Shop Name"
-              value={shopName}
-              onChange={(e) => setShopName(e.target.value)}
-              placeholder="Enter your shop name"
-            />
-          </div>
-          <div className="flex justify-end pt-2">
-            <Button variant="primary" size="md" className="w-full md:w-auto px-8">Save Profile</Button>
-          </div>
-        </Card>
-      </div>
-
-      {/* Notifications */}
-      <div className="space-y-3">
-        <SectionHeader>Notification Preferences</SectionHeader>
-        <Card padding="none" className="divide-y divide-[var(--color-divider)] overflow-hidden border-[var(--color-border)] shadow-[var(--shadow-sm)]">
-          <SettingsRow
-            icon={<Bell className="w-5 h-5" />}
-            label="Daily Book Summary"
-            description="Receive daily balance ledger summaries via SMS/Email"
-          />
-          <SettingsRow
-            icon={<Bell className="w-5 h-5" />}
-            label="Low Stock Alerts"
-            description="Alert when store inventory falls below critical levels"
-          />
-        </Card>
-      </div>
-
-      {/* Sign out */}
-      <div className="pt-4">
-        <Button variant="ghost" fullWidth size="lg" icon={<LogOut className="w-5 h-5" />} className="text-[var(--color-danger)] hover:bg-red-50 dark:hover:bg-red-950/20 border border-transparent hover:border-red-200 dark:hover:border-red-900/30">
-          Sign Out of Account
-        </Button>
       </div>
     </div>
   );

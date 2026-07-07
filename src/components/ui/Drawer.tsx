@@ -1,108 +1,62 @@
 // ============================================================================
-// Drawer — Mobile-first Slide Panel
-// Source: new_Design_plan.md Task 5
+// Drawer Primitive — Liquid Glass Sliding Panel
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface DrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
+  title: string;
   children: React.ReactNode;
-  side?: 'bottom' | 'right' | 'left';
 }
 
-const sideConfig = {
-  bottom: {
-    container: 'items-end justify-center',
-    panel: 'w-full rounded-t-[var(--radius-xl)] max-h-[90dvh]',
-    enter: 'translate-y-0',
-    exit: 'translate-y-full',
-  },
-  right: {
-    container: 'items-stretch justify-end',
-    panel: 'h-full w-80 max-w-[90vw] rounded-l-[var(--radius-xl)]',
-    enter: 'translate-x-0',
-    exit: 'translate-x-full',
-  },
-  left: {
-    container: 'items-stretch justify-start',
-    panel: 'h-full w-80 max-w-[90vw] rounded-r-[var(--radius-xl)]',
-    enter: 'translate-x-0',
-    exit: '-translate-x-full',
-  },
-};
-
-export function Drawer({ isOpen, onClose, title, children, side = 'bottom' }: DrawerProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const cfg = sideConfig[side];
-
+export function Drawer({ isOpen, onClose, title, children }: DrawerProps) {
   useEffect(() => {
-    if (!isOpen) return;
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', h);
-    return () => document.removeEventListener('keydown', h);
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (isOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = '';
-    return () => { document.body.style.overflow = ''; };
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div
-      ref={overlayRef}
-      role="dialog"
-      aria-modal="true"
-      className={['fixed inset-0 flex', cfg.container].join(' ')}
-      style={{ zIndex: 'var(--z-modal)' }}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
-    >
+    <div className="fixed inset-0 z-[450] flex justify-end">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in" aria-hidden />
-
-      {/* Panel */}
       <div
-        className={[
-          'relative bg-[var(--color-surface)] border border-[var(--color-border)]',
-          'shadow-[var(--shadow-modal)] overflow-y-auto',
-          'transition-transform duration-[var(--motion-transitions-drawer)]',
-          cfg.panel,
-          cfg.enter,
-        ]
-          .filter(Boolean)
-          .join(' ')}
-      >
-        {/* Handle (bottom drawer) */}
-        {side === 'bottom' && (
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-[var(--color-border)]" aria-hidden />
-          </div>
-        )}
+        className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300"
+        onClick={onClose}
+      />
 
-        {/* Header */}
-        {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-divider)]">
-            <h2 className="text-[var(--text-h6)] font-semibold">{title}</h2>
+      {/* Drawer Panel */}
+      <div className="relative w-full max-w-md h-full bg-slate-950/80 backdrop-blur-3xl border-l border-white/10 p-6 md:p-8 shadow-2xl flex flex-col justify-between z-10 transition-transform duration-500 ease-out translate-x-0">
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-6 flex-shrink-0">
+            <h3 className="text-lg font-bold text-white tracking-tight">{title}</h3>
             <button
               onClick={onClose}
-              className="p-2 rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-divider)] cursor-pointer transition-colors"
-              aria-label="Close"
+              className="p-1.5 rounded-full hover:bg-white/5 transition-colors cursor-pointer text-slate-400 hover:text-white"
+              aria-label="Close drawer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-        )}
 
-        {/* Body */}
-        <div className="p-6 pb-safe">{children}</div>
+          {/* Body */}
+          <div className="flex-grow overflow-y-auto pr-2 -mr-2 space-y-6 min-h-0 scrollbar-thin">
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   );

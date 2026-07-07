@@ -1,220 +1,247 @@
 // ============================================================================
-// Dashboard Page — Restyled with full design system
-// Source: new_Design_plan.md Task 7, USER_FLOWS.md Flow 6
+// Dashboard Page — v2 Premium Glass Bento Dashboard
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, CreditCard, BarChart3, AlertTriangle, ArrowRight, Plus, Zap } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { ArrowUpRight, TrendingUp, TrendingDown, Users, AlertTriangle, Package, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Tag } from '@/components/ui/Tag';
-import { SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
-import type { DashboardSummary, Transaction, Intent } from '@/types';
+import { Badge } from '@/components/ui/Badge';
+import { SkeletonCard } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
-// ── Summary Card ────────────────────────────────────────────────────────────
-
-function SummaryCard({
-  label, amount, icon, color,
-}: {
-  label: string;
-  amount: number;
-  icon: React.ReactNode;
-  color: string;
-}) {
-  return (
-    <Card padding="md" className="space-y-4 border-[var(--color-border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-all">
-      <div className="flex items-center justify-between">
-        <p className="text-[var(--text-caption)] text-[var(--color-text-muted)] font-semibold uppercase tracking-wider">{label}</p>
-        <div className={['w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center', color].join(' ')}>
-          {icon}
-        </div>
-      </div>
-      <div>
-        <p className="text-[var(--text-h5)] font-bold text-[var(--color-text-primary)] tracking-tight">
-          ₹{amount.toLocaleString('en-IN')}
-        </p>
-      </div>
-    </Card>
-  );
+interface DashboardData {
+  total_sales: number;
+  total_expenses: number;
+  total_credit_given: number;
+  total_credit_received: number;
+  net_revenue: number;
+  transaction_count: number;
+  top_items: Array<{ item: string; quantity_sold: number; revenue: number }>;
+  outstanding_credit: number;
+  low_stock_count: number;
 }
 
-// ── Transaction Row ─────────────────────────────────────────────────────────
-
-function TxRow({ tx }: { tx: Transaction }) {
-  const isPositive = ['sale', 'credit_received'].includes(tx.intent);
-  return (
-    <div className={['flex items-center justify-between py-4 px-5 rounded-[var(--radius-md)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-all hover:border-[var(--color-primary)]/20 cursor-pointer', `tx-${tx.intent.replace('_', '-')}`].join(' ')}>
-      <div className="flex items-center gap-4 min-w-0">
-        <Tag intent={tx.intent as Intent} />
-        <div className="min-w-0">
-          <p className="font-semibold text-[var(--color-text-primary)] truncate text-[var(--text-sm)]">
-            {tx.item || tx.intent.replace('_', ' ')}
-          </p>
-          {tx.customer_name && (
-            <p className="text-[var(--text-caption)] text-[var(--color-text-muted)] truncate mt-0.5">{tx.customer_name}</p>
-          )}
-        </div>
-      </div>
-      <div className="flex flex-col items-end flex-shrink-0 ml-4">
-        <span className={['font-bold text-[var(--text-sm)]', isPositive ? 'text-[var(--color-income)]' : 'text-[var(--color-expense)]'].join(' ')}>
-          {isPositive ? '+' : '-'}₹{Number(tx.amount).toLocaleString('en-IN')}
-        </span>
-        <span className="text-[var(--text-caption)] text-[var(--color-text-muted)] mt-0.5">
-          {new Date(tx.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ── Page ────────────────────────────────────────────────────────────────────
+type Period = 'today' | 'week' | 'month' | 'year';
 
 export default function DashboardPage() {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [txs, setTxs] = useState<Transaction[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<Period>('today');
+
+  const { t } = useTranslation();
+  const { toast } = useToast();
+
+  async function fetchSummary() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/dashboard/summary?period=${period}`);
+      const json = await res.json();
+      if (json.success) {
+        setData(json.data);
+      } else {
+        toast(json.error?.message || 'Failed to load dashboard data', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      toast('Failed to connect to dashboard API', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [sRes, tRes] = await Promise.all([
-          fetch('/api/dashboard/summary?period=today'),
-          fetch('/api/transactions?per_page=8&status=confirmed'),
-        ]);
-        const sData = await sRes.json();
-        const tData = await tRes.json();
-        if (sData.success) setSummary(sData.data);
-        if (tData.success) setTxs(tData.data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchSummary();
+  }, [period]);
+
+  const periods = useMemo<Array<{ key: Period; label: string }>>(() => [
+    { key: 'today', label: 'Today' },
+    { key: 'week', label: 'This Week' },
+    { key: 'month', label: 'This Month' },
+    { key: 'year', label: 'This Year' },
+  ], []);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 max-w-5xl mx-auto select-none">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <h1 className="text-[var(--text-h5)] font-bold text-[var(--color-text-primary)] tracking-tight">Dashboard</h1>
-          <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] font-medium" suppressHydrationWarning>
-            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <h1 className="text-[var(--text-h5)] font-black text-white tracking-tight leading-none">
+            {t('dashboard.title', 'Dashboard')}
+          </h1>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+            {t('dashboard.shop_insights', 'Shop Insights')}
           </p>
         </div>
-        {(summary?.low_stock_count ?? 0) > 0 && (
-          <Badge variant="warning" icon={<AlertTriangle className="w-4 h-4" />}>
-            {summary!.low_stock_count} low stock items
-          </Badge>
-        )}
+
+        {/* Period Selector & Refresh */}
+        <div className="flex items-center gap-3 self-start sm:self-center">
+          <div className="flex bg-white/5 p-1 border border-white/10 rounded-full">
+            {periods.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setPeriod(p.key)}
+                className={[
+                  'px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer',
+                  period === p.key
+                    ? 'bg-blue-500 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white',
+                ].join(' ')}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={fetchSummary}
+            className="p-2.5 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer hover:bg-white/10"
+            aria-label="Refresh dashboard data"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Summary Grid — Responsive layout (2 columns mobile, 4 columns desktop) */}
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <SummaryCard
-            label="Sales"
-            amount={summary?.total_sales ?? 0}
-            icon={<TrendingUp className="w-5 h-5 text-[var(--color-income)]" />}
-            color="bg-green-50 dark:bg-green-950/20 border border-green-150 dark:border-green-900/30"
-          />
-          <SummaryCard
-            label="Expenses"
-            amount={summary?.total_purchases ?? 0}
-            icon={<TrendingDown className="w-5 h-5 text-[var(--color-expense)]" />}
-            color="bg-red-50 dark:bg-red-950/20 border border-red-150 dark:border-red-900/30"
-          />
-          <SummaryCard
-            label="Credit Given"
-            amount={summary?.total_credit_given ?? 0}
-            icon={<CreditCard className="w-5 h-5 text-[var(--color-credit-given)]" />}
-            color="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-150 dark:border-yellow-900/30"
-          />
-          <SummaryCard
-            label="Net Revenue"
-            amount={summary?.net_revenue ?? 0}
-            icon={<BarChart3 className="w-5 h-5 text-[var(--color-info)]" />}
-            color="bg-blue-50 dark:bg-blue-950/20 border border-blue-150 dark:border-blue-900/30"
-          />
+        /* Bento Grid Layout */
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Sales Card */}
+          <Card padding="md" className="space-y-4 md:col-span-2 border-white/5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {t('dashboard.sales', 'Total Sales')}
+              </span>
+              <div className="w-8 h-8 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[var(--text-h3)] font-black text-white leading-none tracking-tight">
+                ₹{data?.total_sales.toLocaleString('en-IN') || '0.00'}
+              </p>
+              <p className="text-xs text-slate-500 font-medium">Sales recorded over chosen period</p>
+            </div>
+          </Card>
+
+          {/* Expenses Card */}
+          <Card padding="md" className="space-y-4 border-white/5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {t('dashboard.expenses', 'Expenses')}
+              </span>
+              <div className="w-8 h-8 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                <TrendingDown className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[var(--text-h4)] font-black text-white leading-none tracking-tight">
+                ₹{data?.total_expenses.toLocaleString('en-IN') || '0.00'}
+              </p>
+              <p className="text-xs text-slate-500 font-medium">Cash outflows logged</p>
+            </div>
+          </Card>
+
+          {/* Net Revenue Card */}
+          <Card padding="md" className="space-y-4 border-white/5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {t('dashboard.net_revenue', 'Net Revenue')}
+              </span>
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[var(--text-h4)] font-black text-white leading-none tracking-tight">
+                ₹{data?.net_revenue.toLocaleString('en-IN') || '0.00'}
+              </p>
+              <p className="text-xs text-slate-500 font-medium">Net profit margins</p>
+            </div>
+          </Card>
+
+          {/* Khata Outstanding */}
+          <Card padding="md" className="space-y-4 md:col-span-2 border-white/5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Khata Credit Outstanding</span>
+              <Users className="w-4 h-4 text-yellow-400" />
+            </div>
+            <div className="flex items-end justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-[var(--text-h3)] font-black text-yellow-400 leading-none tracking-tight">
+                  ₹{data?.outstanding_credit.toLocaleString('en-IN') || '0.00'}
+                </p>
+                <p className="text-xs text-slate-500 font-medium">Total outstanding Udhar balances</p>
+              </div>
+              <Button variant="secondary" size="sm">
+                <Link href="/customers">Open Khata</Link>
+              </Button>
+            </div>
+          </Card>
+
+          {/* Low Stock Bento Box */}
+          <Card padding="md" className="space-y-4 md:col-span-2 border-white/5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Stock & Inventory</span>
+              <Package className="w-4 h-4 text-blue-400" />
+            </div>
+            <div className="flex items-end justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-4xl font-black text-white leading-none">
+                    {data?.low_stock_count || 0}
+                  </span>
+                  {data?.low_stock_count && data.low_stock_count > 0 ? (
+                    <Badge variant="warning" icon={<AlertTriangle className="w-3.5 h-3.5" />}>
+                      Action Required
+                    </Badge>
+                  ) : (
+                    <Badge variant="success">All Safe</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 font-medium">Items currently below critical reorder levels</p>
+              </div>
+              <Button variant="secondary" size="sm">
+                <Link href="/inventory">View Stock</Link>
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
 
-      {/* Main Content Split: Left panel (Transactions), Right panel (Insights) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Side: Recent Transactions (wider) */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
-            <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Recent Transactions</h2>
-            <Link href="/transactions" className="text-[var(--text-sm)] text-[var(--color-primary)] font-semibold flex items-center gap-1 hover:underline">
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
+      {/* Top Selling Items (Glass panel list) */}
+      {!loading && data && data.top_items.length > 0 && (
+        <Card padding="lg" className="border-white/5 space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-white tracking-tight uppercase">Top Selling Items</h2>
+            <p className="text-xs text-slate-400 font-medium">Most popular products in your shop by volume</p>
           </div>
 
-          <div className="space-y-3">
-            {loading ? (
-              [...Array(4)].map((_, i) => <SkeletonRow key={i} />)
-            ) : txs.length > 0 ? (
-              txs.map((tx) => <TxRow key={tx.id} tx={tx} />)
-            ) : (
-              /* Empty state */
-              <Card padding="lg" className="text-center py-16 space-y-4 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
-                <div className="w-14 h-14 rounded-[var(--radius-xl)] bg-[var(--color-primary-muted)] flex items-center justify-center mx-auto">
-                  <BarChart3 className="w-6 h-6 text-[var(--color-primary)]" />
+          <div className="divide-y divide-white/5">
+            {data.top_items.map((item, index) => (
+              <div key={item.item || index} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-black text-slate-600 w-5">#{index + 1}</span>
+                  <div>
+                    <p className="font-bold text-white text-sm capitalize">{item.item}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{item.quantity_sold} units sold</p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="font-semibold text-[var(--color-text-primary)]">No transactions recorded today</p>
-                  <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] leading-relaxed max-w-sm mx-auto">
-                    Use your voice to record sales, expenses, and customer credit quickly.
-                  </p>
-                </div>
-                <div className="pt-2">
-                  <Button variant="primary" icon={<Plus className="w-4 h-4" />} size="sm">
-                    <Link href="/record">Record Transaction</Link>
-                  </Button>
-                </div>
-              </Card>
-            )}
+                <span className="font-extrabold text-blue-400 text-sm">₹{item.revenue.toLocaleString('en-IN')}</span>
+              </div>
+            ))}
           </div>
-        </div>
-
-        {/* Right Side: Insights panel (sticky) */}
-        <div className="space-y-6">
-          <div className="pb-2 border-b border-[var(--color-border)]">
-            <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Shop Insights</h2>
-          </div>
-
-          <Card padding="md" className="border-[var(--color-border)] bg-[var(--color-surface)] space-y-4">
-            <h3 className="font-semibold text-[var(--color-text-primary)] flex items-center gap-2 text-[var(--text-sm)]">
-              <Zap className="w-4 h-4 text-[var(--color-primary)]" />
-              Quick Tips
-            </h3>
-            <ul className="space-y-3 text-[var(--text-sm)] text-[var(--color-text-secondary)] leading-relaxed">
-              <li className="flex items-start gap-2">
-                <span className="font-bold text-[var(--color-primary)] mt-0.5">•</span>
-                <span>You can speak in <strong>Hindi</strong> or <strong>Telugu</strong> to record sales instantly.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-bold text-[var(--color-primary)] mt-0.5">•</span>
-                <span>Regularly check <strong>Khata</strong> to send credit reminders to customers.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-bold text-[var(--color-primary)] mt-0.5">•</span>
-                <span>Net revenue shows today&apos;s cash balance after deducting expenses.</span>
-              </li>
-            </ul>
-          </Card>
-        </div>
-      </div>
+        </Card>
+      )}
     </div>
   );
 }

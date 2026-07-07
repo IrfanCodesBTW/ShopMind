@@ -1,56 +1,78 @@
 // ============================================================================
-// Card — Core Primitive
-// Source: new_Design_plan.md Task 4, Design.md §Cards
+// Card Primitive — Liquid Glass Spotlight Card
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
-import React from 'react';
+'use client';
+
+import React, { useRef, useState } from 'react';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  padding?: 'sm' | 'md' | 'lg' | 'none';
-  noBorder?: boolean;
-  noShadow?: boolean;
-  hover?: boolean;
+  children: React.ReactNode;
+  padding?: 'none' | 'sm' | 'md' | 'lg';
+  interactive?: boolean;
+  glow?: boolean;
 }
 
-const paddings = {
-  none: '',
-  sm: 'p-4',
-  md: 'p-6',
-  lg: 'p-8',
-};
+export function Card({
+  children,
+  padding = 'md',
+  interactive = false,
+  glow = true,
+  className = '',
+  style,
+  ...props
+}: CardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const [isFocused, setIsFocused] = useState(false);
 
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  (
-    {
-      padding = 'lg',
-      noBorder = false,
-      noShadow = false,
-      hover = false,
-      className = '',
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <div
-        ref={ref}
-        className={[
-          'bg-[var(--color-surface)] rounded-[var(--radius-lg)]',
-          !noBorder && 'border border-[var(--color-border)]',
-          !noShadow && 'shadow-[var(--shadow-card)]',
-          hover && 'transition-card-hover hover:shadow-[var(--shadow-lg)] hover:-translate-y-0.5 cursor-pointer',
-          paddings[padding],
-          className,
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current || !glow) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setCoords({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
 
-Card.displayName = 'Card';
+  const padClasses = {
+    none: 'p-0',
+    sm: 'p-4',
+    md: 'p-6 md:p-8',
+    lg: 'p-8 md:p-10',
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsFocused(true)}
+      onMouseLeave={() => setIsFocused(false)}
+      className={[
+        'relative overflow-hidden rounded-[var(--radius-lg)] transition-all duration-500',
+        interactive ? 'glass-panel-interactive cursor-pointer' : 'glass-panel',
+        padClasses[padding],
+        className,
+      ].join(' ')}
+      style={{
+        ...style,
+      }}
+      {...props}
+    >
+      {/* Spotlight Border Glow */}
+      {glow && isFocused && (
+        <div
+          className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background: `radial-gradient(400px circle at ${coords.x}px ${coords.y}px, rgba(255,255,255,0.06), transparent 80%)`,
+            opacity: isFocused ? 1 : 0,
+          }}
+        />
+      )}
+
+      {/* Internal Content */}
+      <div className="relative z-10">{children}</div>
+    </div>
+  );
+}

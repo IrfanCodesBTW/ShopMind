@@ -1,71 +1,50 @@
 // ============================================================================
-// Skeleton — Loading State Placeholder
-// Source: new_Design_plan.md Task 4
+// Skeleton Primitive — Glowing Glass Loading Skeleton
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 import React from 'react';
 
-interface SkeletonProps {
-  width?: string;
-  height?: string;
-  rounded?: boolean;
-  className?: string;
-  lines?: number;
-}
-
-export function Skeleton({ width, height = '1rem', rounded = false, className = '' }: SkeletonProps) {
+export function Skeleton({
+  className = '',
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <span
+    <div
       className={[
-        'animate-skeleton block',
-        rounded ? 'rounded-[var(--radius-full)]' : 'rounded-[var(--radius-sm)]',
+        'animate-skeleton bg-white/5 border border-white/5 rounded-[12px] h-4 w-full',
         className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-      style={{
-        width: width || '100%',
-        height,
-      }}
-      aria-hidden="true"
+      ].join(' ')}
+      {...props}
     />
   );
 }
 
-/** Convenience preset — a card-shaped skeleton */
-export function SkeletonCard({ className = '' }: { className?: string }) {
+export function SkeletonCard() {
   return (
-    <div
-      className={[
-        'rounded-[var(--radius-lg)] border border-[var(--color-border)] p-6 space-y-3',
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <Skeleton height="1.5rem" width="60%" />
-      <Skeleton height="1rem" width="80%" />
-      <Skeleton height="1rem" width="40%" />
+    <div className="glass-panel p-6 space-y-4">
+      <Skeleton className="w-1/3 h-6" />
+      <Skeleton className="w-2/3 h-4" />
+      <div className="flex gap-2 pt-2">
+        <Skeleton className="w-10 h-10 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="w-1/2 h-3" />
+          <Skeleton className="w-1/4 h-3" />
+        </div>
+      </div>
     </div>
   );
 }
 
-/** Convenience preset — a transaction-row skeleton */
-export function SkeletonRow({ className = '' }: { className?: string }) {
+export function SkeletonRow() {
   return (
-    <div
-      className={[
-        'flex items-center justify-between p-4 rounded-[var(--radius-md)] border border-[var(--color-border)]',
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <div className="flex flex-col gap-2 flex-1">
-        <Skeleton height="1rem" width="50%" />
-        <Skeleton height="0.75rem" width="30%" />
+    <div className="flex items-center justify-between p-4 border-b border-white/5">
+      <div className="flex items-center gap-3 w-1/3">
+        <Skeleton className="w-10 h-10 rounded-[12px] flex-shrink-0" />
+        <Skeleton className="h-4 w-full" />
       </div>
-      <Skeleton height="1.5rem" width="5rem" />
+      <Skeleton className="h-4 w-20" />
+      <Skeleton className="h-8 w-16 rounded-full" />
     </div>
   );
 }

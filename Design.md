@@ -1,904 +1,441 @@
-# DESIGN.md
+ShopMind Design System v2
+Design Philosophy
 
-> Product Design System & UX Guidelines
->
-> Version: 1.0
-> Status: Production
-> Last Updated: July 2026
+ShopMind is no longer a CRUD dashboard.
 
----
+It should feel like an intelligent operating system for retailers.
 
-# Design Philosophy
+Every screen should communicate
 
-## Vision
+clarity
+intelligence
+speed
+confidence
+premium quality
 
-The product should feel calm, intelligent, and effortless.
+The UI should disappear behind the workflow.
 
-Instead of looking like another AI application filled with gradients, glowing borders, and futuristic effects, the interface should resemble a premium productivity tool that users trust every day.
+The interface should feel alive rather than static.
 
-The experience should communicate:
+Design Keywords
 
-- Confidence
-- Clarity
-- Simplicity
-- Warmth
-- Precision
+Apple
 
-Every interaction should reduce cognitive load.
+Glass
 
----
+Depth
 
-# Core Principles
+Soft Shadows
 
-## 1. Human First
+Liquid
 
-The interface exists to support the user—not impress them.
+Minimal
 
-Avoid unnecessary visual noise.
-
----
-
-## 2. Calm Technology
-
-Technology should disappear.
-
-Users should focus on their work rather than the interface.
-
----
-
-## 3. Editorial Quality
-
-Use whitespace intentionally.
-
-Layouts should resemble premium magazines rather than enterprise dashboards.
-
----
-
-## 4. Functional Beauty
-
-Beauty follows usability.
-
-Every component must have a purpose.
-
----
-
-## 5. Motion with Meaning
-
-Animations should communicate state changes.
-
-Never animate simply because it looks interesting.
-
----
-
-# Brand Personality
-
-The product should feel like:
-
-- Apple Notes
-- Linear
-- Raycast
-- Arc Browser
-- Notion
-- Stripe Docs
-
-Avoid looking like:
-
-- Crypto dashboards
-- Gaming interfaces
-- Sci-fi AI products
-- Neon cyberpunk UIs
-
----
-
-# Visual Identity
-
-## Emotional Keywords
-
-- Warm
-- Premium
-- Minimal
-- Trustworthy
-- Professional
-- Intelligent
-- Friendly
-- Focused
-
----
-
-# Color System
-
-## Primary
-
-Background
-
-```
-#F7F7F5
-```
-
-Surface
-
-```
-#FFFFFF
-```
-
-Primary Text
-
-```
-#111111
-```
-
-Secondary Text
-
-```
-#666666
-```
-
-Muted Text
-
-```
-#8B8B8B
-```
-
-Border
-
-```
-#E8E8E8
-```
-
-Divider
-
-```
-#ECECEC
-```
-
----
-
-## Accent
-
-Primary Green
-
-```
-#2D6A4F
-```
-
-Hover
-
-```
-#1B4332
-```
-
-Success
-
-```
-#2ECC71
-```
-
-Warning
-
-```
-#F4B400
-```
-
-Error
-
-```
-#E53935
-```
-
-Info
-
-```
-#2196F3
-```
-
----
-
-## Dark Mode
-
-Background
-
-```
-#0E0E10
-```
-
-Surface
-
-```
-#18181B
-```
-
-Card
-
-```
-#202024
-```
-
-Text
-
-```
-#F5F5F5
-```
-
-Secondary Text
-
-```
-#BBBBBB
-```
-
-Border
-
-```
-rgba(255,255,255,.08)
-```
-
----
-
-# Typography
-
-## Primary Font
-
-Figtree
-
-Weights
-
-- 400
-- 500
-- 600
-- 700
-
----
-
-## Secondary Font
-
-Editorial Serif
-
-Used only for:
-
-- Hero headings
-- Marketing pages
-- Landing pages
-- Large quotes
-
-Never use serif inside dashboards.
-
----
-
-# Type Scale
-
-## H1
-
-72px
-
-Weight 700
-
-Line Height 1.05
-
----
-
-## H2
-
-56px
-
----
-
-## H3
-
-40px
-
----
-
-## H4
-
-32px
-
----
-
-## H5
-
-24px
-
----
-
-## H6
-
-20px
-
----
-
-## Body Large
-
-18px
-
----
-
-## Body
-
-16px
-
----
-
-## Small
-
-14px
-
----
-
-## Caption
-
-12px
-
----
-
-# Spacing System
-
-Base Unit
-
-```
-8px
-```
-
-Spacing Scale
-
-```
-4
-8
-12
-16
-24
-32
-40
-48
-64
-80
-96
-128
-```
-
-Never invent arbitrary spacing values.
-
----
-
-# Grid System
-
-Desktop
-
-12 Columns
-
-Container
-
-1280px
-
----
-
-Tablet
-
-8 Columns
-
----
-
-Mobile
-
-4 Columns
-
----
-
-# Border Radius
-
-Small
-
-8px
-
-Medium
-
-12px
-
-Large
-
-16px
-
-Extra Large
-
-24px
-
-Pill
-
-999px
-
----
-
-# Elevation
-
-Use shadows sparingly.
-
-Card
-
-```
-0 4px 20px rgba(0,0,0,.04)
-```
-
-Modal
-
-```
-0 20px 60px rgba(0,0,0,.15)
-```
-
-Dropdown
-
-```
-0 8px 30px rgba(0,0,0,.08)
-```
-
----
-
-# Components
-
-## Buttons
-
-### Primary
-
-Green
-
-Filled
-
-Rounded
-
-Height
-
-48px
-
----
-
-### Secondary
-
-White
-
-Border
-
-Green Text
-
----
-
-### Ghost
-
-Transparent
-
-Text only
-
----
-
-### Danger
-
-Red
-
-Filled
-
----
-
-# Inputs
-
-Height
-
-48px
-
-Radius
-
-12px
-
-Padding
-
-16px
-
-States
-
-- Default
-- Hover
-- Focus
-- Disabled
-- Error
-
----
-
-# Cards
-
-Padding
-
-32px
-
-Radius
-
-16px
-
-Border
-
-1px
-
-Very subtle shadow.
-
----
-
-# Navigation
-
-Desktop
-
-Sticky navigation
-
-Transparent initially
-
-Blur after scrolling.
-
----
-
-Mobile
-
-Hamburger menu
-
-Fullscreen drawer
-
----
-
-# Layout
-
-Maximum Width
-
-1280px
-
-Section Padding
-
-Desktop
-
-120px
-
-Tablet
-
-80px
-
-Mobile
-
-64px
-
----
-
-# Hero
-
-Large typography
-
-Minimal copy
-
-Strong CTA
-
-Illustration or product visualization
-
-Never overload hero with features.
-
----
-
-# Feature Sections
-
-Use alternating layouts.
-
-Left image
-
-Right content
-
-Then reverse.
-
-This creates visual rhythm.
-
----
-
-# Motion
-
-Animation Duration
-
-Fast
-
-150ms
-
-Normal
-
-250ms
-
-Slow
-
-400ms
-
----
-
-Easing
-
-```
-ease-out
-```
-
-Preferred
-
-Spring animations
-
-Subtle fades
-
-Opacity transitions
-
-Small translations
-
----
-
-Avoid
-
-Bounce
-
-Elastic
-
-Spin
-
-Flash
-
----
-
-# Icons
-
-Style
-
-Rounded
-
-Outline
-
-24px grid
-
-2px stroke
-
-Examples
-
-- Lucide
-- Heroicons
-
----
-
-# Illustrations
-
-Style
-
-Organic
-
-Editorial
+Premium
 
 Human
 
-Soft gradients
+Floating
 
-Avoid
+Modern
 
-3D AI robots
+Spatial
 
-Floating cubes
+Elegant
 
-Circuit boards
+Calm
 
-Abstract neural networks
+Readable
 
----
+Motion First
 
-# Imagery
+Visual Style
 
-Photography
+Avoid flat rectangles.
 
-Natural lighting
+Every component should feel like a floating object.
 
-Editorial composition
+Everything exists on multiple depth layers.
 
-Real people
+Background
 
-Real workspaces
+↓
 
-No stock-photo aesthetics.
+Glass Panel
 
----
+↓
 
-# Accessibility
+Cards
 
-Minimum Contrast
+↓
 
-WCAG AA
+Buttons
+
+↓
+
+Floating Highlights
+
+↓
+
+Motion
+
+↓
+
+Content
+
+Colors
+
+Primary
+
+#0F172A
+
+Surface
+
+rgba(255,255,255,0.05)
+
+Glass
+
+rgba(255,255,255,0.08)
+
+Border
+
+rgba(255,255,255,0.12)
+
+Primary Accent
+
+#3B82F6
+
+Success
+
+#22C55E
+
+Warning
+
+#FACC15
+
+Danger
+
+#EF4444
+
+Background Gradient
+
+#020617
+
+↓
+
+#0F172A
+
+↓
+
+#111827
+Glass Rules
+
+Every card should have
+
+backdrop-blur-xl
+
+border-white/10
+
+bg-white/5
+
+shadow-2xl
+
+rounded-3xl
+
+Never use
+
+solid white cards
+
+hard borders
+
+flat backgrounds
+Border Radius
+
+Cards
+
+28px
+
+Buttons
+
+999px
+
+Inputs
+
+18px
+
+Dialogs
+
+32px
+Shadows
+
+Soft shadows only.
+
+No harsh shadows.
+
+Example
+
+0 30px 80px rgba(0,0,0,.28)
+Typography
+
+Plus Jakarta Sans
+
+Weights
+
+300
+
+400
+
+500
+
+600
+
+700
+
+800
+
+Headings
+
+tracking-tight
+
+font-black
+
+Body
+
+leading-7
+Motion
+
+GSAP
+
+Framer Motion
+
+Lenis
+
+Never abrupt animations.
+
+Use
+
+power3.out
+
+power2.out
+
+expo.out
+
+Animation duration
+
+0.4
+
+0.6
+
+0.8
+
+1.2
+Scroll
+
+Every page should contain
+
+Subtle Parallax
+
+Fade
+
+Scale
+
+Blur
+
+Reveal
+
+Sticky Sections
+
+Floating Layers
+
+Mouse Parallax
+
+Magnetic Buttons
+
+Scroll Progress
+
+Components
+
+Every component should follow the same language.
+
+Cards
+
+Glass
+
+Floating
+
+Hover Lift
+
+Glow
+
+Animated Border
+
+Buttons
+
+Rounded Pills
+
+Magnetic
+
+Gradient Hover
+
+Micro Animations
+
+Tables
+
+Floating Container
+
+Soft Grid
+
+Animated Row Hover
+
+Charts
+
+Glass Containers
+
+Gradient Lines
+
+Glow
+
+Inputs
+
+Glass
+
+Large Radius
+
+Focus Glow
+
+Soft Border
+
+Sidebar
+
+Floating
+
+Blur Background
+
+Active Glow
+
+Rounded Navigation
+
+Top Navigation
+
+Transparent
+
+Sticky
+
+Blur
+
+Gradient Border
+
+Dialogs
+
+Blur Background
+
+Scale Animation
+
+Glass Panel
+
+Drawer
+
+Slide
+
+Blur
+
+Spring Motion
+
+Toasts
+
+Glass
+
+Gradient Accent
+
+Floating
+
+Icons
+
+Lucide React
+
+2px stroke
+
+Consistent sizing
+
+No filled icons
+
+Layout
+
+8px spacing system
+
+Max width
+
+1440px
+
+Section padding
+
+80px
+
+Card padding
+
+32px
+Dashboard Style
+
+Avoid dense enterprise layouts.
+
+Introduce breathing room.
+
+Increase whitespace.
+
+More rounded layouts.
+
+Floating statistics.
+
+Animated charts.
+
+Soft gradients.
+
+Glass navigation.
+
+Images
+
+Use premium Unsplash imagery only.
+
+Lifestyle
+
+Retail
+
+Inventory
+
+Shopping
+
+Customers
+
+Products
+
+Technology
+
+No illustrations.
+
+Only high-end photography.
+
+Accessibility
+
+AA Contrast
 
 Keyboard Navigation
 
-Required
+Reduced Motion Support
 
-Visible Focus States
+ARIA labels
 
-Required
+Focus States
 
-Reduced Motion
+Responsive
 
-Supported
+Performance
 
-Semantic HTML
+Lazy Loading
 
-Required
+GPU Animations
 
-Alt Text
+Transform-based Motion
 
-Required
+Avoid expensive layout shifts
 
-Screen Reader Labels
-
-Required
-
----
-
-# Responsive Design
-
-## Desktop
-
-1440+
-
-Full layouts
-
-12-column grid
-
----
-
-## Laptop
-
-1024+
-
-Reduced spacing
-
----
-
-## Tablet
-
-768+
-
-8-column layout
-
----
-
-## Mobile
-
-390+
-
-Single-column layout
-
-Large touch targets
-
-Bottom spacing increased.
-
----
-
-# Empty States
-
-Every empty state should explain:
-
-- Why nothing exists
-- What users should do next
-- Primary CTA
-
-Avoid dead ends.
-
----
-
-# Loading States
-
-Use skeleton loaders.
-
-Avoid spinners longer than 1 second.
-
----
-
-# Error States
-
-Explain:
-
-- What happened
-- Why it happened
-- How to fix it
-
-Avoid technical jargon.
-
----
-
-# Design Tokens
-
-## Radius
-
-```
-radius-sm
-radius-md
-radius-lg
-radius-xl
-radius-pill
-```
-
-## Colors
-
-```
-color-primary
-color-secondary
-color-surface
-color-background
-color-success
-color-warning
-color-error
-```
-
-## Typography
-
-```
-font-heading
-font-body
-font-serif
-```
-
-## Spacing
-
-```
-space-1
-space-2
-space-3
-...
-space-16
-```
-
----
-
-# UX Guidelines
-
-Always prioritize:
-
-- Simplicity
-- Clarity
-- Readability
-- Accessibility
-- Performance
-
-Every screen should answer:
-
-1. Where am I?
-2. What can I do?
-3. What should I do next?
-
----
-
-# Performance Budget
-
-Target Lighthouse Score
-
-95+
-
-Largest Contentful Paint
-
-<2.5s
-
-Interaction to Next Paint
-
-<200ms
-
-CLS
-
-<0.1
-
----
-
-# Design Checklist
-
-Before shipping a screen:
-
-- Consistent spacing
-- Correct typography
-- Responsive layout
-- Accessible contrast
-- Keyboard support
-- Loading state
-- Empty state
-- Error state
-- Motion reviewed
-- Mobile tested
-- Dark mode tested
-
----
-
-# Design North Star
-
-Design software that disappears.
-
-The interface should feel invisible, allowing users to focus entirely on their work while quietly communicating craftsmanship, trust, and clarity.
+60fps animations

@@ -1,6 +1,6 @@
 // ============================================================================
-// FeedbackWidget — Simple feedback form widget
-// Source: ROADMAP Phase 3
+// FeedbackWidget — Simple feedback form widget (v2 Premium Glass)
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
@@ -45,12 +45,12 @@ export function FeedbackWidget() {
   };
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-6 z-[300]">
+    <div className="fixed bottom-24 md:bottom-6 right-6 z-[300]">
       {/* Floating Action Button */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="w-12 h-12 rounded-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-[var(--shadow-lg)] flex items-center justify-center cursor-pointer transition-transform btn-press"
+          className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-[0_4px_15px_rgba(59,130,246,0.3)] flex items-center justify-center cursor-pointer transition-transform btn-press border border-blue-400/20"
           aria-label="Send Feedback"
         >
           <MessageSquare className="w-5 h-5" />
@@ -59,26 +59,26 @@ export function FeedbackWidget() {
 
       {/* Widget Card */}
       {open && (
-        <Card padding="md" className="w-80 border-[var(--color-border)] shadow-[var(--shadow-xl)] animate-card-enter space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-[var(--color-divider)]">
-            <h3 className="font-bold text-[var(--text-sm)] text-[var(--color-text-primary)]">Send Feedback</h3>
-            <button onClick={() => setOpen(false)} className="p-1 rounded-full hover:bg-[var(--color-divider)] cursor-pointer">
-              <X className="w-4 h-4 text-[var(--color-text-muted)]" />
+        <Card padding="md" className="w-80 border-white/10 shadow-2xl space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+            <h3 className="font-extrabold text-sm text-white tracking-tight">Send Feedback</h3>
+            <button onClick={() => setOpen(false)} className="p-1 rounded-full hover:bg-white/5 cursor-pointer">
+              <X className="w-4 h-4 text-slate-400 hover:text-white" />
             </button>
           </div>
 
           {submitted ? (
             <div className="py-6 flex flex-col items-center gap-2 text-center">
-              <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-950/20 flex items-center justify-center">
-                <Check className="w-5 h-5 text-[var(--color-success)]" />
+              <div className="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                <Check className="w-5 h-5 text-green-400" />
               </div>
-              <p className="font-semibold text-[var(--color-success)] text-[var(--text-sm)]">Thank you!</p>
-              <p className="text-xs text-[var(--color-text-muted)]">Your feedback helps improve ShopMind.</p>
+              <p className="font-bold text-green-400 text-sm">Thank you!</p>
+              <p className="text-xs text-slate-400">Your feedback helps improve ShopMind.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[var(--color-text-secondary)]">How is your experience?</label>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">How is your experience?</label>
                 <div className="flex gap-1.5 justify-center py-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -91,8 +91,8 @@ export function FeedbackWidget() {
                         className={[
                           'w-6 h-6',
                           rating >= star
-                            ? 'fill-[var(--color-warning)] text-[var(--color-warning)]'
-                            : 'text-[var(--color-text-muted)]',
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-slate-500',
                         ].join(' ')}
                       />
                     </button>
@@ -101,14 +101,14 @@ export function FeedbackWidget() {
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="feedback-msg" className="text-xs font-semibold text-[var(--color-text-secondary)]">Message</label>
+                <label htmlFor="feedback-msg" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Message</label>
                 <textarea
                   id="feedback-msg"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Tell us what you think…"
                   rows={3}
-                  className="w-full p-2.5 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-sm)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] text-[var(--color-text-primary)]"
+                  className="w-full p-3 text-sm bg-white/5 border border-white/10 focus:border-blue-500/40 rounded-[12px] focus:outline-none focus:ring-4 focus:ring-blue-500/5 text-white placeholder-slate-500 font-medium"
                 />
               </div>
 

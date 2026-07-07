@@ -1,32 +1,33 @@
 {
   "font": {
-    "body": "var(--font-body)",
-    "serif": "var(--font-serif)",
-    "deva": "var(--font-deva)",
-    "telugu": "var(--font-telugu)",
-    "serif-family": "Fraunces"
+    "body": "Plus Jakarta Sans, sans-serif",
+    "serif": "Editorial Serif, Georgia, serif",
+    "deva": "Poppins, sans-serif",
+    "telugu": "NTR, sans-serif"
   },
   "size": {
-    "h1": "clamp(2.25rem, 5vw, 4.5rem)",
-    "h2": "clamp(1.75rem, 4vw, 3rem)",
-    "h3": "clamp(1.5rem, 3vw, 2.5rem)",
+    "h1": "clamp(2.5rem, 6vw, 4.5rem)",
+    "h2": "clamp(2rem, 5vw, 3.5rem)",
+    "h3": "clamp(1.75rem, 4vw, 2.5rem)",
     "h4": "2rem",
     "h5": "1.5rem",
     "h6": "1.25rem",
     "body-lg": "1.125rem",
-    "body": "1.125rem",
-    "sm": "1rem",
-    "caption": "0.875rem",
-    "metadata": "0.75rem"
+    "body": "1rem",
+    "sm": "0.875rem",
+    "caption": "0.75rem",
+    "metadata": "0.7rem"
   },
   "weight": {
+    "light": "300",
     "regular": "400",
     "medium": "500",
     "semibold": "600",
-    "bold": "700"
+    "bold": "700",
+    "black": "800"
   },
   "line-height": {
-    "tight": "1.05",
+    "tight": "1.1",
     "snug": "1.25",
     "normal": "1.6",
     "relaxed": "1.75"

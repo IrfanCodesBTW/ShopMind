@@ -1,6 +1,6 @@
 // ============================================================================
-// SidebarNav — Desktop Sidebar Navigation
-// Source: new_Design_plan.md Task 6, Design.md §Navigation
+// SidebarNav — Desktop Sidebar Navigation (v2 Premium Glass)
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
@@ -32,56 +32,63 @@ export function SidebarNav() {
 
   return (
     <aside
-      className="hidden md:flex flex-col fixed top-0 bottom-0 left-0 w-64 bg-[var(--color-surface)] border-r border-[var(--color-border)] py-8 px-5 z-[150]"
+      className="hidden md:flex flex-col fixed top-4 bottom-4 left-4 w-64 bg-slate-950/40 backdrop-blur-2xl border border-white/10 p-6 rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.28)] z-[150] justify-between"
       role="navigation"
       aria-label="Sidebar navigation"
     >
-      {/* Brand Logo */}
-      <div className="flex items-center gap-3 px-2 mb-10">
-        <div className="w-9 h-9 rounded-[var(--radius-md)] bg-[var(--color-primary)] flex items-center justify-center shadow-[var(--shadow-sm)]">
-          <Mic className="w-5 h-5 text-white" aria-hidden />
+      <div className="space-y-8">
+        {/* Brand Logo */}
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 flex items-center justify-center shadow-[0_4px_15px_rgba(59,130,246,0.3)] border border-blue-400/20">
+            <Mic className="w-5 h-5 text-white" aria-hidden />
+          </div>
+          <span className="font-extrabold text-lg text-white tracking-tight">
+            ShopMind
+          </span>
         </div>
-        <span className="font-bold text-[var(--text-h6)] text-[var(--color-text-primary)] tracking-tight">
-          ShopMind
-        </span>
+
+        {/* Nav List */}
+        <nav className="space-y-1.5">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={[
+                  'flex items-center gap-3 px-4 py-3 rounded-full',
+                  'text-sm font-semibold transition-all duration-300 group relative overflow-hidden',
+                  active
+                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    : 'text-slate-400 hover:text-white border border-transparent hover:bg-white/5',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <span className={[
+                  'transition-colors duration-300',
+                  active ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-200'
+                ].join(' ')}>
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
+
+                {/* Subtle active glow dot */}
+                {active && (
+                  <span className="absolute right-4 w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Nav List */}
-      <nav className="flex-1 space-y-1.5">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? 'page' : undefined}
-              className={[
-                'flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)]',
-                'text-[var(--text-sm)] font-medium transition-all duration-[var(--motion-duration-fast)] group',
-                active
-                  ? 'bg-[var(--color-primary-muted)] text-[var(--color-primary-hover)]'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-divider)] hover:text-[var(--color-text-primary)]',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
-              <span className={[
-                'transition-colors duration-[var(--motion-duration-fast)]',
-                active ? 'text-[var(--color-primary-hover)]' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)]'
-              ].join(' ')}>
-                {item.icon}
-              </span>
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
       {/* Quick Indicator */}
-      <div className="border-t border-[var(--color-divider)] pt-6 px-2">
-        <div className="flex items-center gap-3 text-[var(--text-caption)] text-[var(--color-text-muted)]">
-          <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-success)] animate-pulse" />
-          <span>Syncing with Cloud</span>
+      <div className="border-t border-white/5 pt-6 px-2">
+        <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
+          <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse" />
+          <span>Cloud Connected</span>
         </div>
       </div>
     </aside>

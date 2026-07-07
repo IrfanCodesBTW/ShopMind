@@ -1,17 +1,20 @@
 // ============================================================================
-// Inventory Page — Stock management with CRUD
-// Source: USER_FLOWS.md Flow 5, IMPLEMENTATION_PLAN Phase 1
+// Inventory Page — v2 Premium Glass Stock Management
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, Package, AlertTriangle, Pencil, Trash2, X, Check } from 'lucide-react';
+import { Search, Plus, Package, AlertTriangle, Pencil, Trash2, X, Check, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { SkeletonRow } from '@/components/ui/Skeleton';
+import { Dialog } from '@/components/ui/Dialog';
+import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface InventoryItem {
   id: string;
@@ -30,7 +33,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Add form state
@@ -38,10 +41,14 @@ export default function InventoryPage() {
   const [newQty, setNewQty] = useState('');
   const [newUnit, setNewUnit] = useState('pc');
   const [newReorder, setNewReorder] = useState('5');
+  const [submitting, setSubmitting] = useState(false);
 
   // Edit state
   const [editQty, setEditQty] = useState('');
   const [editReorder, setEditReorder] = useState('');
+
+  const { t } = useTranslation();
+  const { toast } = useToast();
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -55,18 +62,21 @@ export default function InventoryPage() {
       if (data.success) setItems(data.data);
     } catch (e) {
       console.error(e);
+      toast('Failed to load inventory items', 'error');
     } finally {
       setLoading(false);
     }
-  }, [search, viewMode]);
+  }, [search, viewMode, toast]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchItems();
   }, [fetchItems]);
 
-  const handleAdd = async () => {
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!newName.trim()) return;
+    setSubmitting(true);
     try {
       const res = await fetch('/api/inventory', {
         method: 'POST',
@@ -80,12 +90,18 @@ export default function InventoryPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setShowAddForm(false);
+        setShowAddModal(false);
         setNewName(''); setNewQty(''); setNewUnit('pc'); setNewReorder('5');
+        toast('Inventory item added successfully', 'success');
         fetchItems();
+      } else {
+        toast(data.error?.message || 'Failed to add item', 'error');
       }
     } catch (e) {
       console.error(e);
+      toast('Error saving inventory item', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -102,31 +118,42 @@ export default function InventoryPage() {
       const data = await res.json();
       if (data.success) {
         setEditingId(null);
+        toast('Inventory item updated', 'success');
         fetchItems();
       }
     } catch (e) {
       console.error(e);
+      toast('Failed to update inventory', 'error');
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
-      fetchItems();
+      const res = await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        toast('Item deleted from inventory', 'success');
+        fetchItems();
+      }
     } catch (e) {
       console.error(e);
+      toast('Failed to delete item', 'error');
     }
   };
 
   const lowStockCount = items.filter((i) => i.low_stock).length;
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto select-none">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-[var(--text-h5)] font-bold text-[var(--color-text-primary)] tracking-tight">Inventory</h1>
-          <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] font-medium">Manage your shop stock and reorder levels</p>
+        <div className="space-y-1.5">
+          <h1 className="text-[var(--text-h5)] font-black text-white tracking-tight leading-none">
+            {t('inventory.title', 'Inventory')}
+          </h1>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+            {t('inventory.subtitle', 'Manage your shop stock and reorder levels')}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           {lowStockCount > 0 && (
@@ -134,53 +161,39 @@ export default function InventoryPage() {
               {lowStockCount} low stock
             </Badge>
           )}
-          <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddForm(true)}>
-            Add Item
+          <button
+            onClick={fetchItems}
+            className="p-2.5 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer hover:bg-white/10"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>
+            {t('inventory.add_item', 'Add Item')}
           </Button>
         </div>
       </div>
 
-      {/* Add Item Form */}
-      {showAddForm && (
-        <Card padding="lg" className="animate-card-enter space-y-6 border-[var(--color-border)] shadow-[var(--shadow-md)]">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--color-divider)]">
-            <h2 className="text-[var(--text-body)] font-bold text-[var(--color-text-primary)]">Add New Item</h2>
-            <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)} icon={<X className="w-4 h-4" />} aria-label="Close" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Item Name *" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Basmati Rice" required />
-            <Input label="Unit" value={newUnit} onChange={(e) => setNewUnit(e.target.value)} placeholder="kg, pc, packet…" />
-            <Input label="Current Stock" type="number" value={newQty} onChange={(e) => setNewQty(e.target.value)} placeholder="0" />
-            <Input label="Reorder Level" type="number" value={newReorder} onChange={(e) => setNewReorder(e.target.value)} placeholder="5" />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button variant="primary" onClick={handleAdd} icon={<Plus className="w-4 h-4" />}>Add Item</Button>
-            <Button variant="ghost" onClick={() => setShowAddForm(false)}>Cancel</Button>
-          </div>
-        </Card>
-      )}
-
-      {/* Filters */}
+      {/* Filters & Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-grow">
           <Input
-            placeholder="Search items…"
+            placeholder={t('inventory.search_placeholder', 'Search items…')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             leftIcon={<Search className="w-5 h-5" />}
             rightIcon={search ? (
-              <button onClick={() => setSearch('')} className="cursor-pointer p-1 rounded-full hover:bg-[var(--color-divider)]">
-                <X className="w-4 h-4 text-[var(--color-text-muted)]" />
+              <button onClick={() => setSearch('')} className="cursor-pointer p-1 rounded-full hover:bg-white/5">
+                <X className="w-4 h-4 text-slate-400 hover:text-white" />
               </button>
             ) : undefined}
           />
         </div>
-        <div className="flex gap-1.5 bg-[var(--color-surface)] p-1 border border-[var(--color-border)] rounded-[var(--radius-md)] self-start">
+        <div className="flex gap-1.5 bg-white/5 p-1 border border-white/10 rounded-full self-start">
           <Button variant={viewMode === 'all' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('all')} className="!h-8">
-            All Items
+            {t('inventory.all_items', 'All Items')}
           </Button>
           <Button variant={viewMode === 'low_stock' ? 'primary' : 'ghost'} size="sm" onClick={() => setViewMode('low_stock')} className="!h-8">
-            Low Stock
+            {t('inventory.low_stock', 'Low Stock')}
           </Button>
         </div>
       </div>
@@ -190,18 +203,18 @@ export default function InventoryPage() {
         {loading ? (
           [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
         ) : items.length === 0 ? (
-          <Card padding="lg" className="text-center py-20 space-y-4 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
-            <div className="w-14 h-14 rounded-[var(--radius-xl)] bg-[var(--color-primary-muted)] flex items-center justify-center mx-auto">
-              <Package className="w-6 h-6 text-[var(--color-primary)]" />
+          <Card padding="lg" className="text-center py-20 space-y-4 border-white/5 shadow-2xl">
+            <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-500">
+              <Package className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <p className="font-semibold text-[var(--color-text-primary)]">No inventory items yet</p>
-              <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] leading-relaxed max-w-sm mx-auto">
-                Add your shop items to track stock levels and get low-stock alerts.
+              <p className="font-bold text-white text-sm">{t('inventory.no_items', 'No inventory items yet')}</p>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                {t('inventory.no_items_desc', 'Add your shop items to track stock levels and get low-stock alerts.')}
               </p>
             </div>
             <div className="pt-2">
-              <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddForm(true)}>
+              <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>
                 Add First Item
               </Button>
             </div>
@@ -211,75 +224,70 @@ export default function InventoryPage() {
             <div
               key={item.id}
               className={[
-                'flex items-center justify-between py-4 px-5 rounded-[var(--radius-md)] bg-[var(--color-surface)] border transition-all',
+                'flex items-center justify-between py-4.5 px-6 rounded-[var(--radius-md)] bg-white/5 border transition-all duration-300',
                 item.low_stock
-                  ? 'border-[var(--color-warning)]/40 shadow-[var(--shadow-sm)]'
-                  : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/20',
+                  ? 'border-red-500/30 bg-red-500/[0.02]'
+                  : 'border-white/5 hover:border-white/10',
               ].join(' ')}
             >
               <div className="flex items-center gap-4 min-w-0">
                 <div className={[
-                  'w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center flex-shrink-0',
+                  'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border',
                   item.low_stock
-                    ? 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/30'
-                    : 'bg-[var(--color-primary-muted)]',
+                    ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                    : 'bg-white/5 border-white/5 text-slate-400',
                 ].join(' ')}>
-                  {item.low_stock
-                    ? <AlertTriangle className="w-5 h-5 text-[var(--color-warning)]" />
-                    : <Package className="w-5 h-5 text-[var(--color-primary)]" />
-                  }
+                  {item.low_stock ? <AlertTriangle className="w-4 h-4" /> : <Package className="w-4 h-4" />}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-[var(--color-text-primary)] truncate text-[var(--text-sm)]">
-                    {item.item_name}
-                  </p>
-                  <p className="text-[var(--text-caption)] text-[var(--color-text-muted)] mt-0.5">
-                    Reorder at: {item.reorder_level} {item.unit}
+                  <p className="font-bold text-white text-sm truncate">{item.item_name}</p>
+                  <p className="text-[10px] font-semibold text-slate-500 mt-1 tracking-wider uppercase">
+                    Reorder level: {item.reorder_level} {item.unit}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+              <div className="flex items-center gap-4 flex-shrink-0 ml-4">
                 {editingId === item.id ? (
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
                       value={editQty}
                       onChange={(e) => setEditQty(e.target.value)}
-                      className="w-16 h-8 text-center text-sm border border-[var(--color-border)] rounded-[var(--radius-sm)] bg-[var(--color-bg)]"
+                      className="w-16 h-8 text-center text-xs border border-white/10 rounded-full bg-slate-950 text-white focus:outline-none focus:border-blue-500/50"
                     />
-                    <button onClick={() => handleUpdate(item.id)} className="p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-950/20 cursor-pointer">
-                      <Check className="w-4 h-4 text-[var(--color-success)]" />
+                    <button onClick={() => handleUpdate(item.id)} className="p-1.5 rounded-full hover:bg-white/5 cursor-pointer">
+                      <Check className="w-4 h-4 text-green-400" />
                     </button>
-                    <button onClick={() => setEditingId(null)} className="p-1.5 rounded-full hover:bg-[var(--color-divider)] cursor-pointer">
-                      <X className="w-4 h-4 text-[var(--color-text-muted)]" />
+                    <button onClick={() => setEditingId(null)} className="p-1.5 rounded-full hover:bg-white/5 cursor-pointer">
+                      <X className="w-4 h-4 text-slate-400" />
                     </button>
                   </div>
                 ) : (
                   <>
                     <div className="text-right">
                       <span className={[
-                        'font-bold text-[var(--text-body)]',
-                        item.low_stock ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-primary)]',
+                        'font-black text-sm',
+                        item.low_stock ? 'text-red-400 animate-pulse' : 'text-white',
                       ].join(' ')}>
                         {item.quantity}
                       </span>
-                      <span className="text-[var(--text-caption)] text-[var(--color-text-muted)] ml-1">{item.unit}</span>
+                      <span className="text-[10px] font-semibold text-slate-500 ml-1 uppercase">{item.unit}</span>
                     </div>
-                    {item.low_stock && <Badge variant="warning">Low</Badge>}
+                    {item.low_stock && <Badge variant="danger">Critical</Badge>}
                     <button
                       onClick={() => { setEditingId(item.id); setEditQty(String(item.quantity)); setEditReorder(String(item.reorder_level)); }}
-                      className="p-1.5 rounded-full hover:bg-[var(--color-divider)] cursor-pointer"
+                      className="p-1.5 rounded-full hover:bg-white/5 cursor-pointer text-slate-500 hover:text-white"
                       aria-label={`Edit ${item.item_name}`}
                     >
-                      <Pencil className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+                      <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(item.id)}
-                      className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
+                      className="p-1.5 rounded-full hover:bg-red-500/10 cursor-pointer text-slate-500 hover:text-red-400"
                       aria-label={`Delete ${item.item_name}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-danger)]" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </>
                 )}
@@ -288,6 +296,47 @@ export default function InventoryPage() {
           ))
         )}
       </div>
+
+      {/* Add Item Modal */}
+      <Dialog isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Inventory Item">
+        <form onSubmit={handleAdd} className="space-y-6">
+          <Input
+            label="Item Name *"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="e.g. Basmati Rice"
+            required
+          />
+          <Input
+            label="Stock Unit"
+            value={newUnit}
+            onChange={(e) => setNewUnit(e.target.value)}
+            placeholder="kg, pc, packet, bag…"
+          />
+          <Input
+            label="Initial Stock Quantity"
+            type="number"
+            value={newQty}
+            onChange={(e) => setNewQty(e.target.value)}
+            placeholder="0"
+          />
+          <Input
+            label="Reorder Alert Level"
+            type="number"
+            value={newReorder}
+            onChange={(e) => setNewReorder(e.target.value)}
+            placeholder="5"
+          />
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" variant="primary" fullWidth loading={submitting} icon={<Plus className="w-4 h-4" />}>
+              Save Item
+            </Button>
+            <Button variant="secondary" fullWidth onClick={() => setShowAddModal(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }

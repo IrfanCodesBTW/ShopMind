@@ -1,64 +1,56 @@
 // ============================================================================
-// ThemeProvider — Dark Mode Context
-// Persists data-theme to localStorage, respects system preference as default
+// ThemeContext — Controls dark/light modes (v2 default: dark glass)
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'dark' | 'light';
 
-interface ThemeContextValue {
+interface ThemeContextType {
   theme: Theme;
-  setTheme: (t: Theme) => void;
-  resolvedTheme: 'light' | 'dark';
+  toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue>({
-  theme: 'system',
-  setTheme: () => {},
-  resolvedTheme: 'light',
-});
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
-
-  function applyTheme(t: Theme) {
-    const html = document.documentElement;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const isDark = t === 'dark' || (t === 'system' && prefersDark);
-
-    if (isDark) {
-      html.setAttribute('data-theme', 'dark');
-      setResolvedTheme('dark');
-    } else {
-      html.setAttribute('data-theme', 'light');
-      html.removeAttribute('data-theme');
-      setResolvedTheme('light');
-    }
-  }
+  const [theme, setTheme] = useState<Theme>('dark'); // Default to dark glass
 
   useEffect(() => {
-    // Load from localStorage on mount
-    const saved = localStorage.getItem('shopmind-theme') as Theme | null;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (saved) setThemeState(saved);
-    applyTheme(saved ?? 'system');
+    const saved = localStorage.getItem('theme') as Theme;
+    if (saved) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTheme(saved);
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTheme('dark');
+    }
   }, []);
 
-  function setTheme(t: Theme) {
-    setThemeState(t);
-    localStorage.setItem('shopmind-theme', t);
-    applyTheme(t);
-  }
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
-export const useTheme = () => useContext(ThemeContext);
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error('useTheme must be used within ThemeProvider');
+  return context;
+}

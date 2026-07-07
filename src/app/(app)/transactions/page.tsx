@@ -1,184 +1,219 @@
 // ============================================================================
-// Transactions Page — Filterable list with search, type filters
-// Source: new_Design_plan.md Task 8, API_SPEC.md §GET /transactions
+// Transactions Page — v2 Premium Glass Transactions Log
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, Calendar, ShoppingBag, ArrowDownRight, Users, X, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Tag } from '@/components/ui/Tag';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SkeletonRow } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { Transaction, Intent } from '@/types';
 
-const ALL_INTENTS: Intent[] = ['sale', 'expense', 'credit_given', 'credit_received', 'stock_update', 'return'];
+type FilterIntent = 'all' | Intent;
 
 export default function TransactionsPage() {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [activeFilters, setActiveFilters] = useState<Intent[]>([]);
+  const [filter, setFilter] = useState<FilterIntent>('all');
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  const fetchTxs = useCallback(async (p = 1, reset = false) => {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+
+  const fetchTransactions = useCallback(async (pageNum = 1, append = false) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ per_page: '20', page: String(p), status: 'confirmed' });
+      const params = new URLSearchParams({
+        page: pageNum.toString(),
+        per_page: '15',
+      });
       if (search) params.set('search', search);
-      if (activeFilters.length === 1) params.set('type', activeFilters[0]);
+      if (filter !== 'all') params.set('intent', filter);
 
       const res = await fetch(`/api/transactions?${params}`);
       const data = await res.json();
+
       if (data.success) {
-        setTxs(reset ? data.data : (prev) => [...prev, ...data.data]);
-        setHasMore(data.pagination?.has_next ?? false);
+        if (append) {
+          setTxs((prev) => [...prev, ...data.data]);
+        } else {
+          setTxs(data.data);
+        }
+        setHasMore(data.data.length === 15);
+      } else {
+        toast('Failed to load transactions', 'error');
       }
     } catch (e) {
       console.error(e);
+      toast('Network error loading transactions', 'error');
     } finally {
       setLoading(false);
     }
-  }, [search, activeFilters]);
+  }, [search, filter, toast]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1);
-    fetchTxs(1, true);
-  }, [search, activeFilters]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchTransactions(1, false);
+  }, [search, filter, fetchTransactions]);
 
-  function toggleFilter(intent: Intent) {
-    setActiveFilters((prev) =>
-      prev.includes(intent) ? prev.filter((f) => f !== intent) : [...prev, intent]
-    );
-  }
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchTransactions(nextPage, true);
+  };
 
-  const isPositive = (tx: Transaction) => ['sale', 'credit_received'].includes(tx.intent);
+  const getIcon = (intent: Intent) => {
+    switch (intent) {
+      case 'sale': return <ShoppingBag className="w-4 h-4 text-green-400" />;
+      case 'expense': return <ArrowDownRight className="w-4 h-4 text-red-400" />;
+      case 'credit_given':
+      case 'credit_received': return <Users className="w-4 h-4 text-yellow-400" />;
+      default: return <Calendar className="w-4 h-4 text-slate-400" />;
+    }
+  };
+
+  const getIntentLabel = (intent: Intent) => {
+    return intent.replace('_', ' ');
+  };
+
+  const intentTabs: Array<{ key: FilterIntent; label: string }> = [
+    { key: 'all', label: 'All Logs' },
+    { key: 'sale', label: 'Sales' },
+    { key: 'expense', label: 'Expenses' },
+    { key: 'credit_given', label: 'Credit Given' },
+    { key: 'credit_received', label: 'Credit Paid' },
+  ];
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Title */}
-      <div className="space-y-1">
-        <h1 className="text-[var(--text-h5)] font-bold text-[var(--color-text-primary)] tracking-tight">Transactions</h1>
-        <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] font-medium">Search and filter transaction logs</p>
+    <div className="space-y-8 max-w-4xl mx-auto select-none">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1.5">
+          <h1 className="text-[var(--text-h5)] font-black text-white tracking-tight leading-none">
+            {t('transactions.title', 'Transactions')}
+          </h1>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+            {t('transactions.subtitle', 'Search and filter transaction logs')}
+          </p>
+        </div>
+        <button
+          onClick={() => fetchTransactions(1, false)}
+          className="p-2.5 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer hover:bg-white/10"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
       </div>
 
-      {/* Search and Filters Container */}
-      <Card padding="md" className="space-y-6 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
+      {/* Filters bar */}
+      <div className="space-y-4">
         {/* Search */}
         <Input
-          placeholder="Search by item, customer name, price…"
+          placeholder={t('transactions.search_placeholder', 'Search by item, customer name, price…')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           leftIcon={<Search className="w-5 h-5" />}
           rightIcon={search ? (
-            <button onClick={() => setSearch('')} className="cursor-pointer p-1 rounded-full hover:bg-[var(--color-divider)]">
-              <X className="w-4 h-4 text-[var(--color-text-muted)]" />
+            <button onClick={() => setSearch('')} className="cursor-pointer p-1 rounded-full hover:bg-white/5">
+              <X className="w-4 h-4 text-slate-400 hover:text-white" />
             </button>
           ) : undefined}
-          className="!h-13" // Increase input height slightly for premium look
         />
 
-        {/* Filter tags label + container */}
-        <div className="space-y-3">
-          <p className="text-[var(--text-caption)] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Filter by type</p>
-          <div className="flex gap-2.5 flex-wrap">
-            {ALL_INTENTS.map((intent) => (
-              <button key={intent} onClick={() => toggleFilter(intent)} className="cursor-pointer">
-                <Tag
-                  intent={intent}
-                  className={[
-                    'transition-all duration-[var(--motion-duration-fast)]',
-                    activeFilters.includes(intent)
-                      ? 'ring-2 ring-[var(--color-primary)] ring-offset-2 scale-102 opacity-100'
-                      : 'opacity-85 hover:opacity-100'
-                  ].join(' ')}
-                />
-              </button>
-            ))}
-            {activeFilters.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setActiveFilters([])} icon={<Filter className="w-4 h-4" />} className="ml-1 text-[var(--color-primary)]">
-                Clear Filters
-              </Button>
-            )}
-          </div>
+        {/* Intent Tabs */}
+        <div className="flex overflow-x-auto pb-1 gap-2 scrollbar-none">
+          {intentTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={[
+                'px-4 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap cursor-pointer',
+                filter === tab.key
+                  ? 'bg-blue-500 text-white border-blue-400/30 shadow-[0_4px_12px_rgba(59,130,246,0.3)]'
+                  : 'text-slate-400 hover:text-slate-200 bg-white/5 border-white/5 hover:border-white/10',
+              ].join(' ')}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      </Card>
+      </div>
 
-      {/* Transaction List */}
-      <div className="space-y-3">
-        {loading && txs.length === 0 ? (
+      {/* Logs Feed */}
+      <Card padding="none" className="border-white/5 divide-y divide-white/5 overflow-hidden shadow-2xl">
+        {loading && page === 1 ? (
           [...Array(6)].map((_, i) => <SkeletonRow key={i} />)
         ) : txs.length === 0 ? (
-          <Card padding="lg" className="text-center py-20 space-y-4 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
-            <div className="w-14 h-14 rounded-[var(--radius-xl)] bg-[var(--color-primary-muted)] flex items-center justify-center mx-auto">
-              <Filter className="w-6 h-6 text-[var(--color-primary)]" />
+          <div className="text-center py-20 px-6 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-500">
+              <Filter className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <p className="font-semibold text-[var(--color-text-primary)]">No matching transactions found</p>
-              <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] leading-relaxed max-w-sm mx-auto">
-                {search || activeFilters.length > 0
-                  ? 'Try broadening your search query or clearing type filters.'
-                  : 'Get started by recording a transaction using the mic button.'}
+              <p className="font-bold text-white text-sm">
+                {t('transactions.no_results', 'No matching transactions found')}
+              </p>
+              <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                {t('transactions.no_results_hint', 'Try broadening your search query or clearing type filters.')}
               </p>
             </div>
-            {(search || activeFilters.length > 0) && (
-              <div className="pt-2">
-                <Button variant="secondary" size="sm" onClick={() => { setSearch(''); setActiveFilters([]); }}>
-                  Clear Search & Filters
-                </Button>
-              </div>
-            )}
-          </Card>
+          </div>
         ) : (
           txs.map((tx) => (
             <div
               key={tx.id}
               className={[
-                'flex items-center justify-between py-4 px-5 rounded-[var(--radius-md)] bg-[var(--color-surface)] border border-[var(--color-border)] transition-all hover:border-[var(--color-primary)]/20 cursor-pointer',
-                `tx-${tx.intent.replace('_', '-')}`
+                'flex items-center justify-between py-4.5 px-6 transition-colors hover:bg-white/[0.02]',
+                tx.intent ? `tx-${tx.intent.replace('_', '-')}` : '',
               ].join(' ')}
             >
               <div className="flex items-center gap-4 min-w-0">
-                <Tag intent={tx.intent as Intent} />
+                <div className="w-9 h-9 rounded-full bg-white/5 border border-white/5 flex items-center justify-center flex-shrink-0">
+                  {getIcon(tx.intent)}
+                </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-[var(--color-text-primary)] truncate text-[var(--text-sm)]">
-                    {tx.item || tx.intent.replace('_', ' ')}
+                  <p className="font-bold text-white text-sm capitalize truncate">
+                    {tx.item || getIntentLabel(tx.intent)}
                   </p>
-                  <p className="text-[var(--text-caption)] text-[var(--color-text-muted)] mt-0.5">
-                    {tx.customer_name && `${tx.customer_name} · `}
-                    {new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase mt-0.5 tracking-wider">
+                    {tx.customer_name ? `Customer: ${tx.customer_name}` : 'General Cash'} &bull; {tx.payment_mode || 'Cash'}
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col items-end ml-4 flex-shrink-0">
-                <span className={['font-bold text-[var(--text-sm)]', isPositive(tx) ? 'text-[var(--color-income)]' : 'text-[var(--color-expense)]'].join(' ')}>
-                  {isPositive(tx) ? '+' : '-'}₹{Number(tx.amount).toLocaleString('en-IN')}
-                </span>
-                {tx.payment_mode && <Badge variant="neutral" className="mt-1">{tx.payment_mode}</Badge>}
+
+              <div className="flex items-center gap-4 ml-4 flex-shrink-0">
+                <div className="text-right">
+                  <span className={[
+                    'font-black text-sm',
+                    tx.intent === 'expense' || tx.intent === 'credit_given' ? 'text-red-400' : 'text-green-400'
+                  ].join(' ')}>
+                    {tx.intent === 'expense' || tx.intent === 'credit_given' ? '-' : '+'}₹{tx.amount.toLocaleString('en-IN')}
+                  </span>
+                  <p className="text-[9px] text-slate-500 mt-0.5">
+                    {new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
               </div>
             </div>
           ))
         )}
+      </Card>
 
-        {hasMore && (
-          <div className="pt-4">
-            <Button
-              variant="secondary"
-              fullWidth
-              loading={loading}
-              onClick={() => { const next = page + 1; setPage(next); fetchTxs(next, false); }}
-              className="py-3.5"
-            >
-              Load More Transactions
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* Load More */}
+      {hasMore && !loading && (
+        <div className="flex justify-center pt-2">
+          <Button variant="secondary" size="md" onClick={loadMore}>
+            {t('transactions.load_more', 'Load More Transactions')}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

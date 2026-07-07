@@ -1,285 +1,435 @@
 // ============================================================================
-// Record Page — Voice Recording + Confirmation Flow (restyled)
-// Source: new_Design_plan.md Task 7, USER_FLOWS.md Flow 1, Flow 3, Flow 7
+// Record Page — v2 Premium Voice Transaction Recorder & Confirm
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { VoiceRecordButton } from '@/components/voice/VoiceRecordButton';
-import { ConfirmationCard } from '@/components/transaction/ConfirmationCard';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Mic, Square, Sparkles, Check, RotateCcw, Keyboard } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Tag } from '@/components/ui/Tag';
-import { CheckCircle2, Plus, ArrowLeft } from 'lucide-react';
-import type { Transaction, Intent, PaymentMode } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
+import type { ParsedTransaction, Intent, PaymentMode, DueStatus } from '@/types';
 
-type PageState = 'ready' | 'processing' | 'confirm' | 'success' | 'manual';
-
-const PAYMENT_MODES: PaymentMode[] = ['cash', 'upi', 'card', 'credit'];
-const INTENTS: Intent[] = ['sale', 'expense', 'credit_given', 'credit_received', 'stock_update'];
+type FlowState = 'idle' | 'recording' | 'processing' | 'review' | 'success';
 
 export default function RecordPage() {
-  const [pageState, setPageState] = useState<PageState>('ready');
-  const [pendingTransaction, setPendingTransaction] = useState<Transaction | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<FlowState>('idle');
+  const [transcript, setTranscript] = useState('');
+  const [parsed, setParsed] = useState<Partial<ParsedTransaction> | null>(null);
+  const [txId, setTxId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [isManual, setIsManual] = useState(false);
 
-  // Manual entry state
-  const [manualIntent, setManualIntent] = useState<Intent>('sale');
-  const [manualItem, setManualItem] = useState('');
-  const [manualAmount, setManualAmount] = useState('');
-  const [manualCustomer, setManualCustomer] = useState('');
-  const [manualQuantity, setManualQuantity] = useState('');
-  const [manualUnit, setManualUnit] = useState('');
-  const [manualPaymentMode, setManualPaymentMode] = useState<PaymentMode>('cash');
+  // Edit variables
+  const [editIntent, setEditIntent] = useState<Intent>('sale');
+  const [editItem, setEditItem] = useState('');
+  const [editQty, setEditQty] = useState('');
+  const [editUnit, setEditUnit] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editCust, setEditCust] = useState('');
+  const [editPayMode, setEditPayMode] = useState<PaymentMode>('cash');
+  const [editDueStatus, setEditDueStatus] = useState<DueStatus>('paid');
 
-  const handleTransactionParsed = useCallback((transaction: Transaction) => {
-    setPendingTransaction(transaction);
-    setPageState('confirm');
-    setError(null);
-  }, []);
+  // Audio recording references
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  const handleConfirm = useCallback(
-    async (corrections?: Record<string, unknown>) => {
-      if (!pendingTransaction) return;
-      try {
-        const response = await fetch('/api/transactions/confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transaction_id: pendingTransaction.id, corrections }),
-        });
-        const data = await response.json();
-        if (data.success) {
-          setPageState('success');
-          setTimeout(() => { setPageState('ready'); setPendingTransaction(null); }, 2500);
-        } else {
-          setError(data.error?.message || 'Failed to confirm transaction');
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Network error');
-      }
-    },
-    [pendingTransaction]
-  );
+  const router = useRouter();
+  const { t } = useTranslation();
+  const { toast } = useToast();
 
-  const handleCancel = useCallback(() => {
-    setPendingTransaction(null);
-    setPageState('ready');
-    setError(null);
-  }, []);
-
-  const handleManualSubmit = useCallback(async () => {
-    if (!manualAmount || Number(manualAmount) <= 0) {
-      setError('Amount is required');
-      return;
-    }
+  const startRecording = async () => {
     try {
-      const response = await fetch('/api/transactions/confirm', {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await handleAudioUpload(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setState('recording');
+    } catch (err) {
+      console.error(err);
+      toast('Could not access microphone', 'error');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && state === 'recording') {
+      mediaRecorderRef.current.stop();
+      // Stop all tracks on the stream to release mic access
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+    }
+  };
+
+  const handleAudioUpload = async (audioBlob: Blob) => {
+    setState('processing');
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob);
+
+      const res = await fetch('/api/transactions/voice', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const tx = data.data;
+        setTxId(tx.id);
+        setTranscript(tx.raw_transcript);
+        
+        // Map parsed transaction fields
+        setParsed({
+          intent: tx.intent,
+          item: tx.item || undefined,
+          quantity: tx.quantity || undefined,
+          unit: tx.unit || undefined,
+          amount: tx.amount || undefined,
+          customer: tx.customer_name || undefined,
+          payment_mode: tx.payment_mode || undefined,
+          due_status: tx.due_status || undefined,
+          confidence: tx.confidence_score,
+          provider_used: tx.provider_used,
+        });
+
+        // Initialize editor state
+        setEditIntent(tx.intent);
+        setEditItem(tx.item || '');
+        setEditQty(tx.quantity ? String(tx.quantity) : '');
+        setEditUnit(tx.unit || '');
+        setEditAmount(tx.amount ? String(tx.amount) : '');
+        setEditCust(tx.customer_name || '');
+        setEditPayMode(tx.payment_mode || 'cash');
+        setEditDueStatus(tx.due_status || 'paid');
+
+        setState('review');
+      } else {
+        toast(data.error?.message || 'Voice extraction failed', 'error');
+        setState('idle');
+      }
+    } catch (e) {
+      console.error(e);
+      toast('Network error processing audio', 'error');
+      setState('idle');
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!txId) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/transactions/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transaction_id: 'manual',
-          corrections: {
-            intent: manualIntent,
-            item: manualItem || null,
-            amount: Number(manualAmount),
-            customer_name: manualCustomer || null,
-            quantity: manualQuantity ? Number(manualQuantity) : null,
-            unit: manualUnit || null,
-            payment_mode: manualPaymentMode,
-          },
+          transaction_id: txId,
+          intent: editIntent,
+          item: editItem || null,
+          quantity: editQty ? Number(editQty) : null,
+          unit: editUnit || null,
+          amount: Number(editAmount) || 0,
+          customer_name: editCust || null,
+          payment_mode: editPayMode,
+          due_status: editDueStatus,
         }),
       });
-      const data = await response.json();
+      const data = await res.json();
       if (data.success) {
-        setPageState('success');
-        setManualItem(''); setManualAmount(''); setManualCustomer('');
-        setManualQuantity(''); setManualUnit('');
-        setTimeout(() => setPageState('ready'), 2500);
+        setState('success');
+        toast('Transaction confirmed successfully', 'success');
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
       } else {
-        setError(data.error?.message || 'Failed to save transaction');
+        toast(data.error?.message || 'Confirmation failed', 'error');
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error');
+    } catch (e) {
+      console.error(e);
+      toast('Error confirming transaction', 'error');
+    } finally {
+      setSubmitting(false);
     }
-  }, [manualIntent, manualItem, manualAmount, manualCustomer, manualQuantity, manualUnit, manualPaymentMode]);
+  };
+
+  const handleManualSave = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/transactions/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent: editIntent,
+          item: editItem || null,
+          quantity: editQty ? Number(editQty) : null,
+          unit: editUnit || null,
+          amount: Number(editAmount) || 0,
+          customer_name: editCust || null,
+          payment_mode: editPayMode,
+          due_status: editDueStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast('Transaction saved successfully', 'success');
+        router.push('/dashboard');
+      } else {
+        toast(data.error?.message || 'Saving transaction failed', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      toast('Error saving transaction', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-10 pb-12">
+    <div className="max-w-xl mx-auto space-y-8 select-none">
       {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-[var(--text-h5)] font-bold text-[var(--color-text-primary)] tracking-tight">
-          Record Transaction
+      <div className="space-y-1 text-center">
+        <h1 className="text-[var(--text-h5)] font-black text-white tracking-tight leading-none">
+          {t('record.title', 'Record Transaction')}
         </h1>
-        <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] leading-relaxed">
-          {pageState === 'ready' && 'Speak your transaction or enter details manually'}
-          {pageState === 'processing' && 'Processing your voice audio…'}
-          {pageState === 'confirm' && 'Review details extracted by AI'}
-          {pageState === 'success' && 'Transaction recorded successfully'}
-          {pageState === 'manual' && 'Enter transaction details below'}
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+          {t('record.speak_or_manual', 'Speak your transaction or type manually')}
         </p>
       </div>
 
-      {/* Success */}
-      {pageState === 'success' && (
-        <div className="flex flex-col items-center gap-4 py-20 animate-card-enter">
-          <div className="w-16 h-16 rounded-[var(--radius-full)] bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30 flex items-center justify-center">
-            <CheckCircle2 className="w-9 h-9 text-[var(--color-success)]" />
-          </div>
-          <div className="text-center space-y-1">
-            <p className="text-[var(--text-body-lg)] font-bold text-[var(--color-success)]">Transaction Saved!</p>
-            <p className="text-[var(--text-sm)] text-[var(--color-text-muted)]">Returning to recording screen…</p>
-          </div>
-        </div>
-      )}
+      {state === 'idle' && !isManual && (
+        <Card padding="lg" className="border-white/5 flex flex-col items-center justify-center py-20 space-y-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent pointer-events-none" />
 
-      {/* Voice recording — Centered with generous vertical padding for high visual focus */}
-      {(pageState === 'ready' || pageState === 'processing') && (
-        <div className="flex flex-col items-center justify-center py-20 space-y-12 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-xl)] shadow-[var(--shadow-sm)]">
-          <VoiceRecordButton
-            onTransactionParsed={handleTransactionParsed}
-            onProcessingStart={() => setPageState('processing')}
-            onError={(err) => { setError(err); setPageState('ready'); }}
-          />
-
-          <div className="flex items-center gap-4 text-[var(--color-text-muted)] w-full max-w-xs px-6">
-            <div className="h-px flex-grow bg-[var(--color-border)]" />
-            <span className="text-[var(--text-sm)] font-medium">or</span>
-            <div className="h-px flex-grow bg-[var(--color-border)]" />
+          {/* Micro Animation indicator */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400 uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Ready for Voice</span>
           </div>
 
-          <Button variant="secondary" onClick={() => setPageState('manual')} icon={<Plus className="w-4 h-4" />}>
-            Enter Manually
-          </Button>
-        </div>
-      )}
+          {/* Record Button */}
+          <button
+            onClick={startRecording}
+            className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 border border-blue-400/20 flex items-center justify-center text-white shadow-[0_12px_40px_rgba(59,130,246,0.4)] cursor-pointer transition-transform btn-press relative"
+            aria-label="Start audio recording"
+          >
+            <Mic className="w-10 h-10" />
+          </button>
 
-      {/* Confirmation card */}
-      {pageState === 'confirm' && pendingTransaction && (
-        <div className="max-w-md mx-auto">
-          <ConfirmationCard
-            transaction={pendingTransaction}
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
-          />
-        </div>
-      )}
-
-      {/* Manual entry form using design system primitives */}
-      {pageState === 'manual' && (
-        <Card padding="lg" className="animate-card-enter space-y-6 border-[var(--color-border)] shadow-[var(--shadow-md)]">
-          {/* Header row to go back */}
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--color-divider)]">
-            <h2 className="text-[var(--text-body)] font-bold text-[var(--color-text-primary)]">Manual Entry</h2>
-            <Button variant="ghost" size="sm" onClick={() => setPageState('ready')} icon={<ArrowLeft className="w-4 h-4" />}>
-              Back to Mic
-            </Button>
+          <div className="space-y-1 text-center">
+            <p className="text-sm font-bold text-white">{t('record.tap_to_speak', 'Tap to Speak')}</p>
+            <p className="text-xs text-slate-500 font-medium">Record sales, expenses, and credit logs</p>
           </div>
 
-          {/* Type selector */}
-          <div className="space-y-2">
-            <p className="text-[var(--text-sm)] font-semibold text-[var(--color-text-secondary)]">Transaction Type</p>
-            <div className="flex flex-wrap gap-2">
-              {INTENTS.map((intent) => (
-                <button key={intent} onClick={() => setManualIntent(intent)} className="cursor-pointer">
-                  <Tag
-                    intent={intent}
-                    className={manualIntent === intent ? 'ring-2 ring-[var(--color-primary)] ring-offset-2' : 'opacity-85 hover:opacity-100'}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Amount */}
-          <Input
-            label="Amount *"
-            type="number"
-            value={manualAmount}
-            onChange={(e) => setManualAmount(e.target.value)}
-            placeholder="0.00"
-            leftIcon={<span className="text-sm font-semibold text-[var(--color-text-muted)]">₹</span>}
-            error={error && !manualAmount ? 'Amount is required' : undefined}
-            required
-          />
-
-          {/* Item */}
-          <Input
-            label="Item description"
-            value={manualItem}
-            onChange={(e) => setManualItem(e.target.value)}
-            placeholder="e.g. Rice, Milk, Electricity bill"
-          />
-
-          {/* Qty + Unit */}
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Quantity"
-              type="number"
-              value={manualQuantity}
-              onChange={(e) => setManualQuantity(e.target.value)}
-              placeholder="0"
-            />
-            <Input
-              label="Unit"
-              value={manualUnit}
-              onChange={(e) => setManualUnit(e.target.value)}
-              placeholder="kg, pc, packet, litre…"
-            />
-          </div>
-
-          {/* Customer */}
-          <Input
-            label="Customer Name"
-            value={manualCustomer}
-            onChange={(e) => setManualCustomer(e.target.value)}
-            placeholder="e.g. Rajesh Kumar (optional)"
-          />
-
-          {/* Payment mode */}
-          <div className="space-y-2">
-            <p className="text-[var(--text-sm)] font-semibold text-[var(--color-text-secondary)]">Payment Mode</p>
-            <div className="flex gap-2 flex-wrap">
-              {PAYMENT_MODES.map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setManualPaymentMode(mode)}
-                  className={[
-                    'px-5 py-2.5 rounded-[var(--radius-pill)] text-[var(--text-sm)] font-semibold capitalize cursor-pointer',
-                    'border transition-all duration-[var(--motion-duration-fast)] btn-press',
-                    manualPaymentMode === mode
-                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-[var(--shadow-sm)]'
-                      : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-text-muted)]',
-                  ].join(' ')}
-                  aria-pressed={manualPaymentMode === mode}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-[var(--color-divider)]">
-            <Button variant="primary" fullWidth onClick={handleManualSubmit}>
-              Save Transaction
-            </Button>
-            <Button variant="ghost" onClick={handleCancel}>
-              Cancel
-            </Button>
+          <div className="w-full flex items-center justify-center gap-2 text-xs font-bold text-slate-500 pt-4 border-t border-white/5">
+            <button onClick={() => setIsManual(true)} className="hover:text-white transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-1.5">
+              <Keyboard className="w-4 h-4" />
+              {t('record.enter_manually', 'Enter Manually')}
+            </button>
           </div>
         </Card>
       )}
 
-      {/* Error */}
-      {error && !['confirm', 'manual'].includes(pageState) && (
-        <div
-          role="alert"
-          className="p-4 rounded-[var(--radius-md)] bg-red-50 dark:bg-red-900/20 border border-[var(--color-danger)]/35 text-[var(--text-sm)] text-[var(--color-danger)]"
-        >
-          {error}
+      {state === 'recording' && (
+        <Card padding="lg" className="border-white/5 flex flex-col items-center justify-center py-20 space-y-8 shadow-2xl">
+          {/* Animated Red Pulse ring */}
+          <button
+            onClick={stopRecording}
+            className="w-24 h-24 rounded-full bg-gradient-to-r from-red-600 to-red-500 border border-red-400/20 flex items-center justify-center text-white shadow-[0_12px_40px_rgba(239,68,68,0.4)] cursor-pointer animate-recording-pulse relative z-10"
+            aria-label="Stop audio recording"
+          >
+            <Square className="w-8 h-8 fill-current" />
+          </button>
+
+          <div className="space-y-1 text-center">
+            <p className="text-sm font-bold text-red-400 animate-pulse uppercase tracking-wider">{t('record.recording', 'Recording')}</p>
+            <p className="text-xs text-slate-500 font-medium">Click to stop and begin voice extraction</p>
+          </div>
+        </Card>
+      )}
+
+      {state === 'processing' && (
+        <Card padding="lg" className="border-white/5 flex flex-col items-center justify-center py-20 space-y-6 text-center shadow-2xl">
+          <div className="w-14 h-14 rounded-full border-4 border-blue-500/10 border-t-blue-500 animate-spin" />
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-white leading-none">{t('record.processing', 'Processing Audio')}</p>
+            <p className="text-xs text-slate-500 font-medium">AI is extracting transaction details…</p>
+          </div>
+        </Card>
+      )}
+
+      {(state === 'review' || isManual) && (
+        <div className="space-y-6">
+          {/* Transcript bubble */}
+          {state === 'review' && (
+            <Card padding="md" className="border-white/5 space-y-3 relative">
+              <span className="text-[10px] font-bold text-slate-500 tracking-wider block uppercase">Raw Audio Transcript</span>
+              <p className="text-sm font-mono text-slate-200 leading-relaxed italic bg-white/5 p-4 rounded-[12px] border border-white/5">
+                &ldquo;{transcript}&rdquo;
+              </p>
+              {parsed && (
+                <div className="flex items-center gap-2">
+                  <Badge variant={parsed.confidence! > 0.8 ? 'success' : 'warning'}>
+                    Confidence: {Math.round(parsed.confidence! * 100)}%
+                  </Badge>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase">via {parsed.provider_used}</span>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Edit Form */}
+          <Card padding="lg" className="border-white/5 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/5">
+              <h2 className="text-sm font-bold text-white tracking-tight uppercase">
+                {isManual ? 'Manual Entry' : 'Verify extracted details'}
+              </h2>
+              <button
+                onClick={() => { setState('idle'); setIsManual(false); setParsed(null); }}
+                className="p-1.5 rounded-full hover:bg-white/5 text-slate-500 hover:text-white cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Intent */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block">Transaction Type</label>
+                <select
+                  value={editIntent}
+                  onChange={(e) => setEditIntent(e.target.value as Intent)}
+                  className="w-full bg-white/5 border border-white/10 hover:border-white/15 focus:border-blue-500/50 rounded-[18px] h-12 px-4 transition-all duration-300 text-white font-semibold text-sm focus:outline-none"
+                >
+                  <option value="sale">Sale (Income)</option>
+                  <option value="expense">Expense (Outflow)</option>
+                  <option value="credit_given">Credit Given (Udhar)</option>
+                  <option value="credit_received">Credit Paid (Repayment)</option>
+                </select>
+              </div>
+
+              {/* Amount */}
+              <Input
+                label="Amount (₹) *"
+                type="number"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                placeholder="0.00"
+                required
+              />
+
+              {/* Item details */}
+              {editIntent !== 'credit_given' && editIntent !== 'credit_received' && (
+                <>
+                  <Input
+                    label="Item Name"
+                    value={editItem}
+                    onChange={(e) => setEditItem(e.target.value)}
+                    placeholder="Rice, sugar, electric bill…"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label="Quantity"
+                      type="number"
+                      value={editQty}
+                      onChange={(e) => setEditQty(e.target.value)}
+                      placeholder="0"
+                    />
+                    <Input
+                      label="Unit"
+                      value={editUnit}
+                      onChange={(e) => setEditUnit(e.target.value)}
+                      placeholder="kg, packet…"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Customer */}
+              <Input
+                label="Customer Name"
+                value={editCust}
+                onChange={(e) => setEditCust(e.target.value)}
+                placeholder="Name (Optional for cash)"
+              />
+
+              {/* Payment Mode */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block">Payment Mode</label>
+                <select
+                  value={editPayMode}
+                  onChange={(e) => setEditPayMode(e.target.value as PaymentMode)}
+                  className="w-full bg-white/5 border border-white/10 hover:border-white/15 focus:border-blue-500/50 rounded-[18px] h-12 px-4 transition-all duration-300 text-white font-semibold text-sm focus:outline-none"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI / Online</option>
+                  <option value="credit">Credit / Udhar</option>
+                  <option value="card">Card</option>
+                </select>
+              </div>
+
+              {/* Due Status */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block">Due Status</label>
+                <select
+                  value={editDueStatus}
+                  onChange={(e) => setEditDueStatus(e.target.value as DueStatus)}
+                  className="w-full bg-white/5 border border-white/10 hover:border-white/15 focus:border-blue-500/50 rounded-[18px] h-12 px-4 transition-all duration-300 text-white font-semibold text-sm focus:outline-none"
+                >
+                  <option value="paid">Paid</option>
+                  <option value="due">Due</option>
+                  <option value="partial">Partial</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="primary"
+                fullWidth
+                loading={submitting}
+                onClick={isManual ? handleManualSave : handleConfirm}
+                icon={<Check className="w-5 h-5" />}
+              >
+                {isManual ? 'Save Transaction' : 'Confirm Transaction'}
+              </Button>
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => { setState('idle'); setIsManual(false); setParsed(null); }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </Card>
         </div>
+      )}
+
+      {state === 'success' && (
+        <Card padding="lg" className="border-white/5 flex flex-col items-center justify-center py-20 space-y-6 text-center shadow-2xl">
+          <div className="w-14 h-14 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+            <Check className="w-7 h-7 text-green-400" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-green-400 leading-none uppercase tracking-wider">{t('record.success', 'Transaction Confirmed')}</p>
+            <p className="text-xs text-slate-500 font-medium">{t('record.returning', 'Returning to dashboard…')}</p>
+          </div>
+        </Card>
       )}
     </div>
   );

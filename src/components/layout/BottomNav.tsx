@@ -1,6 +1,6 @@
 // ============================================================================
-// BottomNav — App Navigation (refactored)
-// Source: new_Design_plan.md Task 6, Design.md §Navigation
+// BottomNav — App Navigation (v2 Premium Glass)
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
@@ -30,12 +30,12 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-[var(--color-surface)] border-t border-[var(--color-border)]"
+      className="fixed bottom-4 left-4 right-4 bg-slate-950/60 backdrop-blur-3xl border border-white/10 rounded-full py-2 px-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
       style={{ zIndex: 'var(--z-sticky)' }}
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="flex items-end justify-around max-w-lg mx-auto px-2 h-16">
+      <div className="flex items-center justify-around max-w-lg mx-auto h-12 relative">
         {NAV.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + '/');
 
@@ -47,11 +47,11 @@ export function BottomNav() {
                 aria-label={item.label}
                 aria-current={active ? 'page' : undefined}
                 className={[
-                  'relative -top-5 w-14 h-14 rounded-[var(--radius-full)] flex items-center justify-center',
-                  'shadow-[var(--shadow-lg)] text-white cursor-pointer btn-press',
+                  'relative -top-5 w-14 h-14 rounded-full flex items-center justify-center',
+                  'shadow-[0_8px_30px_rgba(59,130,246,0.4)] text-white cursor-pointer btn-press border border-blue-400/30',
                   active
-                    ? 'bg-[var(--color-primary-hover)]'
-                    : 'bg-[var(--color-voice-idle)]',
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -69,16 +69,18 @@ export function BottomNav() {
               aria-current={active ? 'page' : undefined}
               className={[
                 'flex flex-col items-center justify-center gap-0.5 touch-target px-3 py-2',
-                'text-[var(--text-caption)] font-medium transition-colors duration-[var(--motion-duration-fast)]',
+                'text-[10px] font-bold tracking-wide uppercase transition-colors duration-300',
                 active
-                  ? 'text-[var(--color-primary)]'
-                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]',
+                  ? 'text-blue-400 font-extrabold'
+                  : 'text-slate-500 hover:text-slate-200',
               ]
                 .filter(Boolean)
                 .join(' ')}
             >
-              {item.icon}
-              <span>{item.label}</span>
+              <div className={active ? 'scale-110 text-blue-400 transition-transform duration-300' : ''}>
+                {item.icon}
+              </div>
+              <span className="mt-0.5">{item.label}</span>
             </Link>
           );
         })}

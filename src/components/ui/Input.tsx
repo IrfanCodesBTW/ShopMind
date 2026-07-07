@@ -1,112 +1,65 @@
 // ============================================================================
-// Input — Core Primitive
-// Source: new_Design_plan.md Task 4, Design.md §Inputs
+// Input Primitive — Premium Glass Input
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
 
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
-  helperText?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  /** Full-width wrapper — defaults to true */
-  block?: boolean;
 }
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      label,
-      error,
-      helperText,
-      leftIcon,
-      rightIcon,
-      block = true,
-      id,
-      className = '',
-      disabled,
-      ...props
-    },
-    ref
-  ) => {
-    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+export function Input({
+  label,
+  error,
+  leftIcon,
+  rightIcon,
+  className = '',
+  ...props
+}: InputProps) {
+  return (
+    <div className="space-y-1.5 w-full">
+      {label && (
+        <label className="text-xs font-bold text-slate-400 tracking-wide block uppercase">
+          {label}
+        </label>
+      )}
 
-    return (
-      <div className={block ? 'w-full' : 'inline-flex flex-col'}>
-        {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-[var(--text-sm)] font-medium text-[var(--color-text-secondary)] mb-2"
-          >
-            {label}
-          </label>
+      <div className="relative flex items-center w-full">
+        {leftIcon && (
+          <div className="absolute left-4 text-slate-400 pointer-events-none flex items-center justify-center">
+            {leftIcon}
+          </div>
         )}
 
-        <div className="relative">
-          {leftIcon && (
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] w-5 h-5 flex items-center justify-center pointer-events-none">
-              {leftIcon}
-            </span>
-          )}
+        <input
+          className={[
+            'w-full bg-white/5 border border-white/10 hover:border-white/15 focus:border-blue-500/50 focus:bg-white/[0.07] text-slate-200 focus:text-white rounded-[18px] h-12 px-4 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/10 placeholder-slate-500 font-medium text-sm',
+            leftIcon ? 'pl-11' : '',
+            rightIcon ? 'pr-11' : '',
+            error ? 'border-red-500/40 focus:border-red-500/50 focus:ring-red-500/10' : '',
+            className,
+          ].join(' ')}
+          {...props}
+        />
 
-          <input
-            ref={ref}
-            id={inputId}
-            disabled={disabled}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
-            className={[
-              'w-full h-12 px-4 text-[var(--text-body)] text-[var(--color-text-primary)]',
-              'bg-[var(--color-surface)] border rounded-[var(--radius-md)]',
-              'outline-none transition-all duration-[var(--motion-duration-fast)]',
-              'placeholder:text-[var(--color-text-muted)]',
-              'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--color-bg)]',
-              error
-                ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-2 focus:ring-[var(--color-danger)]/20'
-                : 'border-[var(--color-border)] hover:border-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20',
-              leftIcon ? 'pl-11' : '',
-              rightIcon ? 'pr-11' : '',
-              className,
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            {...props}
-          />
-
-          {rightIcon && (
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] w-5 h-5 flex items-center justify-center">
-              {rightIcon}
-            </span>
-          )}
-        </div>
-
-        {error && (
-          <p
-            id={`${inputId}-error`}
-            role="alert"
-            className="mt-1.5 flex items-center gap-1.5 text-[var(--text-sm)] text-[var(--color-danger)]"
-          >
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            {error}
-          </p>
-        )}
-
-        {helperText && !error && (
-          <p
-            id={`${inputId}-helper`}
-            className="mt-1.5 text-[var(--text-sm)] text-[var(--color-text-muted)]"
-          >
-            {helperText}
-          </p>
+        {rightIcon && (
+          <div className="absolute right-4 text-slate-400 flex items-center justify-center">
+            {rightIcon}
+          </div>
         )}
       </div>
-    );
-  }
-);
 
-Input.displayName = 'Input';
+      {error && (
+        <p className="text-xs font-semibold text-red-400 mt-1 pl-1">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}

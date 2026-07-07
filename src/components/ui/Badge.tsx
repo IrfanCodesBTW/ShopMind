@@ -1,46 +1,42 @@
 // ============================================================================
-// Badge — Semantic Variant Pill
-// Source: new_Design_plan.md Task 4
+// Badge Primitive — Frosted Glass Indicator Badge
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 import React from 'react';
 
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'primary';
-
-interface BadgeProps {
-  variant?: BadgeVariant;
-  icon?: React.ReactNode;
+interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode;
-  className?: string;
+  variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  icon?: React.ReactNode;
 }
 
-const variants: Record<BadgeVariant, string> = {
-  primary: 'bg-[var(--color-primary-muted)] text-[var(--color-primary-hover)]',
-  success: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  danger: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  neutral: 'bg-[var(--color-divider)] text-[var(--color-text-secondary)]',
-};
+export function Badge({
+  children,
+  variant = 'primary',
+  icon,
+  className = '',
+  ...props
+}: BadgeProps) {
+  const variantClasses = {
+    primary: 'bg-blue-500/10 text-blue-300 border-blue-400/20',
+    success: 'bg-green-500/10 text-green-300 border-green-400/20',
+    warning: 'bg-yellow-500/10 text-yellow-300 border-yellow-400/20',
+    danger: 'bg-red-500/10 text-red-300 border-red-400/20',
+    info: 'bg-blue-500/10 text-blue-300 border-blue-400/20',
+  };
 
-export function Badge({ variant = 'neutral', icon, children, className = '' }: BadgeProps) {
   return (
     <span
       className={[
-        'inline-flex items-center gap-1 px-2.5 py-1 rounded-[var(--radius-pill)]',
-        'text-[var(--text-sm)] font-medium leading-none',
-        variants[variant],
+        'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-md select-none',
+        variantClasses[variant],
         className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      ].join(' ')}
+      {...props}
     >
-      {icon && (
-        <span className="w-3.5 h-3.5 flex items-center justify-center" aria-hidden>
-          {icon}
-        </span>
-      )}
-      {children}
+      {icon && <span className="flex-shrink-0">{icon}</span>}
+      <span>{children}</span>
     </span>
   );
 }

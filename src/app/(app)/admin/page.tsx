@@ -1,6 +1,6 @@
 // ============================================================================
-// Admin Dashboard — Provider usage monitoring
-// Source: PRD §5.2, §6, IMPLEMENTATION_PLAN Phase 2
+// Admin Monitor — v2 Premium Glass Provider Metrics
+// Source: Design.md, design-taste-frontend
 // ============================================================================
 
 'use client';
@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 
 interface ProviderStatus {
   provider: string;
@@ -41,12 +42,12 @@ function UsageBar({ pct }: { pct: number }) {
   const color =
     pct >= 90 ? 'var(--color-danger)' :
     pct >= 75 ? 'var(--color-warning)' :
-    'var(--color-success)';
+    '#3B82F6';
 
   return (
-    <div className="w-full h-2 bg-[var(--color-divider)] rounded-[var(--radius-pill)] overflow-hidden">
+    <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
       <div
-        className="h-full rounded-[var(--radius-pill)] transition-all duration-500"
+        className="h-full rounded-full transition-all duration-500"
         style={{ width: `${Math.min(100, pct)}%`, background: color }}
       />
     </div>
@@ -57,112 +58,121 @@ export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const { toast } = useToast();
+
   async function fetchData() {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/providers');
       const json = await res.json();
-      if (json.success) setData(json.data);
+      if (json.success) {
+        setData(json.data);
+      } else {
+        toast('Failed to load admin stats', 'error');
+      }
     } catch (e) {
       console.error(e);
+      toast('Network error loading admin stats', 'error');
     } finally {
       setLoading(false);
     }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData();
+  }, []);
 
   const totalFallbacks = data ? Object.values(data.fallbacks).reduce((s, v) => s + v, 0) : 0;
   const totalEscalations = data ? Object.values(data.escalations).reduce((s, v) => s + v, 0) : 0;
 
   return (
-    <div className="space-y-10 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto select-none">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-[var(--text-h5)] font-bold text-[var(--color-text-primary)] tracking-tight">Admin Monitor</h1>
-          <p className="text-[var(--text-sm)] text-[var(--color-text-muted)] font-medium">AI provider health and usage dashboard</p>
+        <div className="space-y-1.5">
+          <h1 className="text-[var(--text-h5)] font-black text-white tracking-tight leading-none">Admin Monitor</h1>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">AI provider health and usage metrics</p>
         </div>
         <Button variant="secondary" size="sm" icon={<RefreshCw className="w-4 h-4" />} onClick={fetchData} loading={loading}>
           Refresh
         </Button>
       </div>
 
-      {/* KPI Row */}
+      {/* KPI strip */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card padding="md" className="space-y-3 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card padding="md" className="space-y-3 border-white/5">
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-caption)] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Active Providers</span>
-              <Server className="w-4 h-4 text-[var(--color-primary)]" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Providers</span>
+              <Server className="w-4 h-4 text-blue-400" />
             </div>
-            <p className="text-[var(--text-h5)] font-bold">{data?.providers.length || 0}</p>
+            <p className="text-[var(--text-h4)] font-black text-white leading-none tracking-tight">{data?.providers.length || 0}</p>
           </Card>
-          <Card padding="md" className="space-y-3 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
+          <Card padding="md" className="space-y-3 border-white/5">
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-caption)] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Fallbacks Triggered</span>
-              <Zap className="w-4 h-4 text-[var(--color-warning)]" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fallbacks Triggered</span>
+              <Zap className="w-4 h-4 text-yellow-400" />
             </div>
-            <p className="text-[var(--text-h5)] font-bold">{totalFallbacks}</p>
+            <p className="text-[var(--text-h4)] font-black text-yellow-400 leading-none tracking-tight">{totalFallbacks}</p>
           </Card>
-          <Card padding="md" className="space-y-3 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
+          <Card padding="md" className="space-y-3 border-white/5">
             <div className="flex items-center justify-between">
-              <span className="text-[var(--text-caption)] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Escalations</span>
-              <AlertTriangle className="w-4 h-4 text-[var(--color-danger)]" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Escalations</span>
+              <AlertTriangle className="w-4 h-4 text-red-400" />
             </div>
-            <p className="text-[var(--text-h5)] font-bold">{totalEscalations}</p>
+            <p className="text-[var(--text-h4)] font-black text-red-400 leading-none tracking-tight">{totalEscalations}</p>
           </Card>
         </div>
       )}
 
-      {/* Provider Cards */}
+      {/* Provider Details */}
       <div className="space-y-4">
-        <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Provider Status</h2>
+        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Provider Status</h2>
         {loading ? (
-          [...Array(3)].map((_, i) => <SkeletonCard key={i} />)
+          [...Array(2)].map((_, i) => <SkeletonCard key={i} />)
         ) : (
           data?.providers.map((p) => (
-            <Card key={`${p.provider}:${p.model}`} padding="md" className="space-y-4 border-[var(--color-border)] shadow-[var(--shadow-sm)]">
+            <Card key={`${p.provider}:${p.model}`} padding="md" className="space-y-4 border-white/5 shadow-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-[var(--radius-md)] bg-[var(--color-primary-muted)] flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-[var(--color-primary)]" />
+                  <div className="w-9 h-9 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <Activity className="w-4 h-4 text-blue-400" />
                   </div>
                   <div>
-                    <p className="font-semibold text-[var(--color-text-primary)] text-[var(--text-sm)] capitalize">{p.provider}</p>
-                    <p className="text-[var(--text-caption)] text-[var(--color-text-muted)]">{p.model}</p>
+                    <p className="font-bold text-white text-sm capitalize">{p.provider}</p>
+                    <p className="text-[10px] text-slate-500 font-semibold">{p.model}</p>
                   </div>
                 </div>
                 <StatusBadge status={p.status} />
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-[var(--text-sm)]">
-                  <span className="text-[var(--color-text-secondary)]">Daily Usage</span>
-                  <span className="font-semibold text-[var(--color-text-primary)]">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="text-slate-400">Daily Quota Limit</span>
+                  <span className="text-white">
                     {p.dailyUsed} / {p.dailyLimit} ({p.usagePct}%)
                   </span>
                 </div>
                 <UsageBar pct={p.usagePct} />
               </div>
 
-              <div className="grid grid-cols-3 gap-4 text-center pt-2 border-t border-[var(--color-divider)]">
+              <div className="grid grid-cols-3 gap-4 text-center pt-3 border-t border-white/5">
                 <div>
-                  <p className="text-[var(--text-caption)] text-[var(--color-text-muted)]">RPM</p>
-                  <p className="text-[var(--text-sm)] font-semibold">{p.rpm}</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">RPM Limit</p>
+                  <p className="text-xs font-black text-white mt-0.5">{p.rpm}</p>
                 </div>
                 <div>
-                  <p className="text-[var(--text-caption)] text-[var(--color-text-muted)]">Remaining</p>
-                  <p className="text-[var(--text-sm)] font-semibold">{p.remaining}</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Remaining</p>
+                  <p className="text-xs font-black text-white mt-0.5">{p.remaining}</p>
                 </div>
                 <div>
-                  <p className="text-[var(--text-caption)] text-[var(--color-text-muted)]">Tokens</p>
-                  <p className="text-[var(--text-sm)] font-semibold">{p.tokensAvailable}</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Tokens</p>
+                  <p className="text-xs font-black text-white mt-0.5">{p.tokensAvailable}</p>
                 </div>
               </div>
             </Card>
@@ -170,28 +180,21 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* Fallback Details */}
+      {/* Fallback Metrics */}
       {data && totalFallbacks > 0 && (
         <div className="space-y-4">
-          <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Fallback Details</h2>
-          <Card padding="md" className="border-[var(--color-border)] shadow-[var(--shadow-sm)]">
-            <div className="space-y-3">
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fallback Details</h2>
+          <Card padding="md" className="border-white/5 shadow-2xl">
+            <div className="space-y-3.5">
               {Object.entries(data.fallbacks).map(([key, count]) => (
-                <div key={key} className="flex items-center justify-between text-[var(--text-sm)]">
-                  <span className="text-[var(--color-text-secondary)]">{key}</span>
+                <div key={key} className="flex items-center justify-between text-xs font-semibold">
+                  <span className="text-slate-400 capitalize">{key}</span>
                   <Badge variant="warning">{count} times</Badge>
                 </div>
               ))}
             </div>
           </Card>
         </div>
-      )}
-
-      {/* Last updated */}
-      {data && (
-        <p className="text-[var(--text-caption)] text-[var(--color-text-muted)] text-center">
-          Last updated: {new Date(data.timestamp).toLocaleString('en-IN')}
-        </p>
       )}
     </div>
   );
