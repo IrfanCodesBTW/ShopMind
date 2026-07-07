@@ -10,6 +10,8 @@ import { successResponse, Errors } from '@/lib/api/response';
 import { transcribeAudio } from '@/services/stt/groq-whisper';
 import { runPipeline } from '@/services/parsers/pipeline';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { canProceed, consumeToken, logUsage } from '@/services/rate-limiter';
+import { sanitizeTranscript } from '@/lib/security/sanitize';
 import type { MerchantContext, SupportedLanguage } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -35,21 +37,41 @@ export async function POST(request: NextRequest) {
       return Errors.invalidAudio('Audio file exceeds 10MB limit');
     }
 
+    // ── Rate Limiter Check ─────────────────────────────────────────────
+    if (!canProceed('groq', 'whisper-large-v3-turbo')) {
+      return Errors.rateLimited('Speech-to-text service is temporarily busy (rate limit reached)');
+    }
+
     // 3. Speech-to-Text via Groq Whisper
     const language = (languageOverride || user.merchant?.language_preference || 'en') as SupportedLanguage;
     const audioBuffer = Buffer.from(await audioFile.arrayBuffer());
+    
     const sttResult = await transcribeAudio(audioBuffer, language);
 
     if ('error' in sttResult) {
+      await logUsage('groq', 'whisper-large-v3-turbo', 'transcription', 0, false);
       if (sttResult.code === 'RATE_LIMITED') {
         return Errors.rateLimited('Speech-to-text service is temporarily busy');
       }
       return Errors.providerUnavailable(`Transcription failed: ${sttResult.error}`);
     }
 
+    // Request succeeded — consume token and log usage
+    consumeToken('groq', 'whisper-large-v3-turbo');
+    await logUsage('groq', 'whisper-large-v3-turbo', 'transcription', 1, true);
+
     if (!sttResult.transcript || sttResult.transcript.trim().length === 0) {
       return Errors.validation('Could not detect any speech in the audio', [
         { field: 'audio', message: 'No speech detected' },
+      ]);
+    }
+
+    // Sanitize transcript (Prompt Injection defense)
+    const sanitizedTranscript = sanitizeTranscript(sttResult.transcript);
+
+    if (!sanitizedTranscript) {
+      return Errors.validation('Transcript was filtered as unsafe or empty', [
+        { field: 'audio', message: 'Unsafe speech input' },
       ]);
     }
 
@@ -89,14 +111,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Run AI parsing pipeline
-    const pipelineResult = await runPipeline(sttResult.transcript, merchantContext);
+    const pipelineResult = await runPipeline(sanitizedTranscript, merchantContext);
 
     // 6. If all parsers failed, return low-confidence error with transcript
     if (pipelineResult.requiresManualEntry) {
       return Errors.lowConfidence(
         'Could not confidently parse the transaction. Please review.',
         {
-          raw_transcript: sttResult.transcript,
+          raw_transcript: sanitizedTranscript,
           normalized_transcript: pipelineResult.normalizedTranscript,
           attempts: pipelineResult.attempts,
         }
@@ -119,7 +141,7 @@ export async function POST(request: NextRequest) {
         payment_mode: parsed.payment_mode || null,
         due_status: parsed.due_status || 'none',
         confidence_score: parsed.confidence,
-        raw_transcript: sttResult.transcript,
+        raw_transcript: sanitizedTranscript,
         provider_used: parsed.provider_used,
         status: 'pending',
       })

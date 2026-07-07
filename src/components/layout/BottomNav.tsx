@@ -8,7 +8,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Mic, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, Receipt, Mic, Users, Package } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -22,7 +22,7 @@ const NAV: NavItem[] = [
   { href: '/transactions', label: 'Transactions',  icon: <Receipt className="w-5 h-5" /> },
   { href: '/record',       label: 'Record',        icon: <Mic className="w-5 h-5" />, isCenter: true },
   { href: '/customers',    label: 'Khata',         icon: <Users className="w-5 h-5" /> },
-  { href: '/settings',     label: 'Settings',      icon: <Settings className="w-5 h-5" /> },
+  { href: '/inventory',    label: 'Inventory',     icon: <Package className="w-5 h-5" /> },
 ];
 
 export function BottomNav() {

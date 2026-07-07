@@ -9,6 +9,7 @@ import { GeminiParser } from './gemini-parser';
 import { GroqLlamaParser } from './groq-llama-parser';
 import { LocalRulesParser } from './local-rules-parser';
 import { normalizeTranscript } from './normalizer';
+import { canProceed, consumeToken, logUsage } from '@/services/rate-limiter';
 
 // Confidence thresholds per AI_ARCHITECTURE.md §Confidence Scoring
 const THRESHOLDS = {
@@ -49,15 +50,6 @@ export interface PipelineResult {
 
 /**
  * Run the full AI parsing pipeline with fallback chain.
- *
- * Flow (from AI_ARCHITECTURE.md):
- * 1. Normalize transcript
- * 2. Try Gemini 2.5 Flash (primary)
- * 3. If fail/low-confidence → try Groq Llama 3.3 70B
- * 4. If fail → try Local Rules Parser
- * 5. If fail → signal manual entry required
- *
- * Result always goes through confirmation screen (PRD §4.3).
  */
 export async function runPipeline(
   rawTranscript: string,
@@ -71,15 +63,27 @@ export async function runPipeline(
   let bestResult: ParseResult = { success: false, error: 'No parsers available' };
 
   for (const parser of parsers) {
-    // Check availability before trying
-    const available = await parser.isAvailable();
-    if (!available) {
+    // Check local configuration availability first
+    const configured = await parser.isAvailable();
+    if (!configured) {
       attempts.push({
         provider: parser.provider,
         model: parser.model,
         success: false,
         latencyMs: 0,
-        error: 'Provider not available',
+        error: 'Provider not configured (missing keys)',
+      });
+      continue;
+    }
+
+    // Check rate limit quota status before invoking
+    if (parser.provider !== 'local' && !canProceed(parser.provider, parser.model)) {
+      attempts.push({
+        provider: parser.provider,
+        model: parser.model,
+        success: false,
+        latencyMs: 0,
+        error: 'Rate limit / quota safety margin reached',
       });
       continue;
     }
@@ -98,6 +102,14 @@ export async function runPipeline(
         latencyMs,
         error: result.error,
       });
+
+      // Consume tokens and log usage if not local rules
+      if (parser.provider !== 'local') {
+        if (result.success) {
+          consumeToken(parser.provider, parser.model);
+        }
+        await logUsage(parser.provider, parser.model, 'parsing', 1, result.success);
+      }
 
       if (result.success && result.data) {
         // Attach normalized transcript
@@ -130,6 +142,10 @@ export async function runPipeline(
         latencyMs,
         error: err instanceof Error ? err.message : 'Unknown error',
       });
+
+      if (parser.provider !== 'local') {
+        await logUsage(parser.provider, parser.model, 'parsing', 0, false);
+      }
     }
   }
 

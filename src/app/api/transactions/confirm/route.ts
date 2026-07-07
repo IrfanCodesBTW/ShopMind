@@ -71,6 +71,63 @@ export async function POST(request: NextRequest) {
       new_value: updated,
     });
 
+    // ── Credit Ledger Auto-Update ───────────────────────────────────────
+    // When a credit transaction is confirmed, auto-create a ledger entry
+    // and update the customer's balance.
+    const confirmedIntent = updated.intent || existing.intent;
+    if (['credit_given', 'credit_received'].includes(confirmedIntent) && updated.customer_name) {
+      try {
+        // Find or create customer by name
+        let { data: customer } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('name', updated.customer_name)
+          .maybeSingle();
+
+        if (!customer) {
+          const { data: newCustomer } = await supabase
+            .from('customers')
+            .insert({
+              merchant_id: user.id,
+              name: updated.customer_name,
+              phone: null,
+              total_credit: 0,
+              total_paid: 0,
+            })
+            .select()
+            .single();
+          customer = newCustomer;
+        }
+
+        if (customer) {
+          const ledgerType = confirmedIntent === 'credit_given' ? 'credit' : 'debit';
+          const amount = Number(updated.amount || existing.amount);
+          const currentBalance = (customer.total_credit || 0) - (customer.total_paid || 0);
+          const balanceAfter = ledgerType === 'credit'
+            ? currentBalance + amount
+            : currentBalance - amount;
+
+          await supabase.from('credit_ledger').insert({
+            merchant_id: user.id,
+            customer_id: customer.id,
+            transaction_id: body.transaction_id,
+            amount,
+            type: ledgerType,
+            balance_after: balanceAfter,
+          });
+
+          const updateField = ledgerType === 'credit' ? 'total_credit' : 'total_paid';
+          await supabase
+            .from('customers')
+            .update({ [updateField]: (customer[updateField] || 0) + amount })
+            .eq('id', customer.id);
+        }
+      } catch (creditErr) {
+        // Non-critical — don't fail the confirmation
+        console.error('Credit ledger auto-update error:', creditErr);
+      }
+    }
+
     return successResponse(updated);
   } catch (err) {
     console.error('Confirm transaction error:', err);

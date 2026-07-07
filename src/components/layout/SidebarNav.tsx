@@ -8,7 +8,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Mic, Users, BarChart3, Settings } from 'lucide-react';
+import { LayoutDashboard, Receipt, Mic, Users, BarChart3, Settings, Package, Server } from 'lucide-react';
 
 interface SidebarNavItem {
   href: string;
@@ -21,7 +21,9 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: '/transactions', label: 'Transactions',  icon: <Receipt className="w-5 h-5" /> },
   { href: '/record',       label: 'Record Voice',  icon: <Mic className="w-5 h-5" /> },
   { href: '/customers',    label: 'Khata Ledger',  icon: <Users className="w-5 h-5" /> },
+  { href: '/inventory',    label: 'Inventory',     icon: <Package className="w-5 h-5" /> },
   { href: '/analytics',    label: 'Analytics',    icon: <BarChart3 className="w-5 h-5" /> },
+  { href: '/admin',        label: 'Admin Panel',   icon: <Server className="w-5 h-5" /> },
   { href: '/settings',     label: 'Settings',      icon: <Settings className="w-5 h-5" /> },
 ];
 

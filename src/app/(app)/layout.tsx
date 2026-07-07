@@ -9,6 +9,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { SidebarNav } from '@/components/layout/SidebarNav';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/components/ui/Toast';
+import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -29,6 +30,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="md:hidden">
             <BottomNav />
           </div>
+
+          {/* Feedback Widget */}
+          <FeedbackWidget />
         </div>
       </ToastProvider>
     </ThemeProvider>
